@@ -7,12 +7,14 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { TaskItem } from '@/components/TaskItem';
 import { useUser } from '@/context/UserContext';
+import { useTelegramUser } from '@/hooks/useTelegramUser';
 import { getTasks, updateTask, deleteTask, type Task } from '@/api/tasks';
 
 const BOT_LINK = process.env.NEXT_PUBLIC_TELEGRAM_BOT_LINK ?? 'https://t.me/save_you_time_bot';
 
 export default function TasksPage() {
   const { user } = useUser();
+  const { isInTelegram, loading: telegramLoading, error: telegramError } = useTelegramUser();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +27,10 @@ export default function TasksPage() {
     setError(null);
     getTasks(user.id)
       .then(setTasks)
-      .catch((e) => setError(e instanceof Error ? e.message : 'Не удалось загрузить задачи'))
+      .catch((e) => {
+        const msg = e instanceof Error ? e.message : 'Не удалось загрузить задачи';
+        setError(msg === 'Failed to fetch' ? 'Не удалось загрузить задачи. Проверьте подключение.' : msg);
+      })
       .finally(() => setLoading(false));
   }, [user?.id]);
 
@@ -67,7 +72,7 @@ export default function TasksPage() {
         )}
       </div>
 
-      {!user && (
+      {!isInTelegram && !user && (
         <Card className="p-8 text-center max-w-md mx-auto">
           <div className="w-14 h-14 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-2xl mx-auto mb-4">
             ✨
@@ -84,6 +89,24 @@ export default function TasksPage() {
           >
             <Button className="rounded-2xl px-6">Открыть бота</Button>
           </a>
+        </Card>
+      )}
+
+      {isInTelegram && telegramLoading && !user && (
+        <div className="flex flex-col items-center py-12">
+          <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4" />
+          <p className="text-slate-500 text-sm">Вход…</p>
+        </div>
+      )}
+
+      {isInTelegram && telegramError && !user && (
+        <Card className="p-6 max-w-md mx-auto border-amber-200 bg-amber-50/80">
+          <p className="text-amber-800 font-medium mb-1">Не удалось подключиться</p>
+          <p className="text-amber-700/90 text-sm mb-4">{telegramError}</p>
+          <p className="text-amber-700/80 text-xs mb-4">Проверьте интернет и обновите страницу.</p>
+          <Button variant="secondary" className="w-full rounded-2xl" onClick={() => window.location.reload()}>
+            Обновить страницу
+          </Button>
         </Card>
       )}
 
