@@ -60,27 +60,35 @@ export class TelegramService implements OnModuleInit {
     this.bot.on('message', (ctx: TelegrafContext) => this.handleMessage(ctx));
     this.bot.on('callback_query', (ctx: CallbackCtx) => this.handleCallback(ctx));
 
-    await this.bot.launch();
+    // Запуск бота в фоне, чтобы не блокировать подъём HTTP-сервера (listen)
+    void this.launchBot();
+  }
 
-    const webAppUrl = this.configService.get<string>('WEB_APP_URL');
-    if (webAppUrl) {
-      try {
-        await this.bot.telegram.setChatMenuButton({
-          menuButton: {
-            type: 'web_app',
-            text: 'Open',
-            web_app: { url: webAppUrl },
-          },
-        });
-        this.logger.log(`Menu button "Open" set → ${webAppUrl}`);
-      } catch (err) {
-        this.logger.warn('Failed to set menu button: ' + (err instanceof Error ? err.message : String(err)));
+  private async launchBot(): Promise<void> {
+    if (!this.bot) return;
+    try {
+      await this.bot.launch();
+      const webAppUrl = this.configService.get<string>('WEB_APP_URL');
+      if (webAppUrl) {
+        try {
+          await this.bot.telegram.setChatMenuButton({
+            menuButton: {
+              type: 'web_app',
+              text: 'Open',
+              web_app: { url: webAppUrl },
+            },
+          });
+          this.logger.log(`Menu button "Open" set → ${webAppUrl}`);
+        } catch (err) {
+          this.logger.warn('Failed to set menu button: ' + (err instanceof Error ? err.message : String(err)));
+        }
+      } else {
+        this.logger.warn('WEB_APP_URL not set; menu button not configured');
       }
-    } else {
-      this.logger.warn('WEB_APP_URL not set; menu button not configured');
+      this.logger.log('Telegram bot launched');
+    } catch (err) {
+      this.logger.error('Telegram bot failed to launch: ' + (err instanceof Error ? err.message : String(err)));
     }
-
-    this.logger.log('Telegram bot launched');
   }
 
   private async ensureUser(ctx: TelegrafContext): Promise<{ id: string } | null> {

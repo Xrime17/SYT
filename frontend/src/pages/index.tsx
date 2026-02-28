@@ -1,8 +1,11 @@
 'use client';
 
+import Link from 'next/link';
 import { useUser } from '@/context/UserContext';
 import { useTelegramUser } from '@/hooks/useTelegramUser';
 import { Layout } from '@/components/Layout';
+import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
 
 export default function Home() {
   const { user } = useUser();
@@ -10,28 +13,36 @@ export default function Home() {
 
   return (
     <Layout>
-      <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100 mb-4">
-        Трекер задач Syt
-      </h1>
+      <div className="mb-2 text-slate-500 text-sm">
+        {new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' })}
+      </div>
+      <h1 className="text-2xl font-bold text-slate-900 mb-6">Трекер задач</h1>
 
       {!isInTelegram && (
-        <p className="text-zinc-600 dark:text-zinc-400 mb-4">
-          Откройте приложение в Telegram: нажмите <strong>Start</strong> в боте, затем кнопку <strong>Open</strong>.
-        </p>
+        <Card className="mb-6 p-6">
+          <p className="text-slate-600 mb-4">
+            Откройте приложение в Telegram: нажмите <strong>Start</strong> в боте, затем кнопку <strong>Open</strong>.
+          </p>
+        </Card>
       )}
 
       {isInTelegram && loading && !user && (
-        <p className="text-zinc-500 dark:text-zinc-400">Загрузка…</p>
+        <p className="text-slate-500 py-8">Загрузка…</p>
       )}
 
       {isInTelegram && error && (
-        <p className="text-red-600 dark:text-red-400">{error}</p>
+        <p className="text-red-500 mb-4">{error}</p>
       )}
 
       {isInTelegram && !loading && user && (
-        <p className="text-zinc-600 dark:text-zinc-400">
-          Привет, {user.firstName}! Перейдите в Задачи, Повторения или Напоминания.
-        </p>
+        <Card className="p-6 mb-6">
+          <p className="text-slate-600 mb-4">
+            Привет, <strong>{user.firstName}</strong>! Управляйте задачами, повторениями и напоминаниями.
+          </p>
+          <Link href="/tasks">
+            <Button className="w-full rounded-2xl py-3">Перейти к задачам</Button>
+          </Link>
+        </Card>
       )}
     </Layout>
   );
