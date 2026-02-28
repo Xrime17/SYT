@@ -1,35 +1,31 @@
 ## Backend (NestJS + Prisma)
 
-**Технологии**: NestJS (TypeScript), Prisma ORM, PostgreSQL, Docker.
+**Технологии**: NestJS (TypeScript), Prisma ORM, PostgreSQL, Telegram Bot (Telegraf), Docker.
 
 ### Структура
 
-- **`src/app.module.ts`**: корневой модуль, подключает `ConfigModule`, `PrismaModule`, а также модули `UsersModule`, `TasksModule`, `RecurringModule`, `RemindersModule`.
-- **`src/main.ts`**: входная точка приложения, чтение порта из `ConfigService` (`PORT`, по умолчанию 3000).
-- **`src/prisma`**: интеграция Prisma с Nest (`PrismaModule`, `PrismaService`).
-- **`prisma/schema.prisma`**: схема Prisma с подключением к PostgreSQL через `DATABASE_URL`.
-- **Модули**:
-  - `src/users/users.module.ts`
-  - `src/tasks/tasks.module.ts`
-  - `src/recurring/recurring.module.ts`
-  - `src/reminders/reminders.module.ts`
-
-Бизнес-логика и контроллеры/сервисы не реализованы, только структура.
+- **`src/app.module.ts`**: корневой модуль — `ConfigModule`, `PrismaModule`, `UsersModule`, `TasksModule`, `RecurringModule`, `RemindersModule`, `HealthModule`, `TelegramModule`.
+- **`src/main.ts`**: входная точка, порт из `ConfigService` (`PORT`, по умолчанию 3000), CORS, глобальный `ValidationPipe`.
+- **`src/prisma`**: Prisma с Nest (`PrismaModule`, `PrismaService`).
+- **`prisma/schema.prisma`**: схема БД (User, Task, RecurringRule, Reminder и др.).
+- **Модули**: Users, Tasks, Recurring, Reminders — контроллеры и сервисы реализованы; Health — проверка живости; Telegram — бот с кнопкой Open (Mini App).
 
 ### Окружение
 
-Создайте файл `.env` на основе `.env.example`:
+Создайте `.env` на основе `.env.example`:
 
 ```bash
 cp .env.example .env
 ```
 
-И задайте **`DATABASE_URL`** для PostgreSQL, например:
+Переменные:
 
-```env
-DATABASE_URL="postgresql://user:password@localhost:5432/mydb?schema=public"
-PORT=3000
-```
+| Переменная | Описание |
+|------------|----------|
+| `DATABASE_URL` | PostgreSQL (обязательно) |
+| `PORT` | Порт сервера (по умолчанию 3000) |
+| `TELEGRAM_BOT_TOKEN` | Токен бота (необязательно; без него бот не стартует) |
+| `WEB_APP_URL` | URL фронта для кнопки Open в боте (HTTPS в продакшене) |
 
 ### Установка зависимостей
 

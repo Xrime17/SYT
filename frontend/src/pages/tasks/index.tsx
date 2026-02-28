@@ -4,9 +4,12 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/Button';
+import { Card } from '@/components/Card';
 import { TaskItem } from '@/components/TaskItem';
 import { useUser } from '@/context/UserContext';
 import { getTasks, updateTask, deleteTask, type Task } from '@/api/tasks';
+
+const BOT_LINK = process.env.NEXT_PUBLIC_TELEGRAM_BOT_LINK ?? 'https://t.me/save_you_time_bot';
 
 export default function TasksPage() {
   const { user } = useUser();
@@ -19,9 +22,10 @@ export default function TasksPage() {
       setLoading(false);
       return;
     }
+    setError(null);
     getTasks(user.id)
       .then(setTasks)
-      .catch((e) => setError(e instanceof Error ? e.message : 'Ошибка'))
+      .catch((e) => setError(e instanceof Error ? e.message : 'Не удалось загрузить задачи'))
       .finally(() => setLoading(false));
   }, [user?.id]);
 
@@ -47,6 +51,10 @@ export default function TasksPage() {
   };
 
   const completed = tasks.filter((t) => t.status === 'COMPLETED').length;
+  const showList = user && !loading && tasks.length > 0;
+  const showEmptyState = user && !loading && tasks.length === 0 && !error;
+  const showErrorState = user && error;
+  const showAddButton = user && !loading;
 
   return (
     <Layout>
@@ -60,29 +68,49 @@ export default function TasksPage() {
       </div>
 
       {!user && (
-        <p className="text-slate-500 text-center py-8">
-          Откройте приложение в Telegram (Start → Open).
-        </p>
+        <Card className="p-8 text-center max-w-md mx-auto">
+          <div className="w-14 h-14 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-2xl mx-auto mb-4">
+            ✨
+          </div>
+          <h2 className="text-lg font-semibold text-slate-800 mb-2">Откройте в Telegram</h2>
+          <p className="text-slate-600 text-sm mb-6">
+            Нажмите <strong>Start</strong> в боте, затем кнопку <strong>Open</strong>, чтобы войти и управлять задачами.
+          </p>
+          <a
+            href={BOT_LINK}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block"
+          >
+            <Button className="rounded-2xl px-6">Открыть бота</Button>
+          </a>
+        </Card>
       )}
 
       {user && loading && (
-        <p className="text-slate-500 text-center py-8">Загрузка…</p>
-      )}
-
-      {user && error && (
-        <p className="text-red-500 text-sm mb-4">{error}</p>
-      )}
-
-      {user && !loading && !error && tasks.length === 0 && (
-        <div className="rounded-2xl bg-white border border-slate-200/80 p-8 text-center">
-          <p className="text-slate-500 mb-4">У вас пока нет задач</p>
-          <Link href="/tasks/new">
-            <Button>+ Добавить задачу</Button>
-          </Link>
+        <div className="flex flex-col items-center py-12">
+          <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4" />
+          <p className="text-slate-500 text-sm">Загрузка задач…</p>
         </div>
       )}
 
-      {user && !loading && tasks.length > 0 && (
+      {showErrorState && (
+        <Card className="p-4 mb-4 border-amber-200 bg-amber-50/80">
+          <p className="text-amber-800 text-sm">{error}</p>
+          <p className="text-amber-700/80 text-xs mt-1">Проверьте подключение и обновите страницу.</p>
+        </Card>
+      )}
+
+      {showEmptyState && (
+        <Card className="p-8 text-center mb-4">
+          <p className="text-slate-600 mb-6">У вас пока нет задач. Добавьте первую.</p>
+          <Link href="/tasks/new">
+            <Button className="rounded-2xl px-6">+ Добавить задачу</Button>
+          </Link>
+        </Card>
+      )}
+
+      {showList && (
         <div className="space-y-3">
           {tasks.map((task) => (
             <TaskItem
@@ -92,7 +120,12 @@ export default function TasksPage() {
               onDelete={handleDelete}
             />
           ))}
-          <Link href="/tasks/new" className="block mt-4">
+        </div>
+      )}
+
+      {showAddButton && (showList || showErrorState) && (
+        <div className="mt-6">
+          <Link href="/tasks/new" className="block">
             <Button variant="secondary" className="w-full rounded-2xl py-3">
               + Добавить задачу
             </Button>

@@ -19,10 +19,22 @@ export default function Home() {
       <h1 className="text-2xl font-bold text-slate-900 mb-6">Трекер задач</h1>
 
       {!isInTelegram && (
-        <Card className="mb-6 p-6">
-          <p className="text-slate-600 mb-4">
-            Откройте приложение в Telegram: нажмите <strong>Start</strong> в боте, затем кнопку <strong>Open</strong>.
+        <Card className="mb-6 p-8 text-center max-w-md">
+          <div className="w-14 h-14 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-2xl mx-auto mb-4">
+            ✨
+          </div>
+          <h2 className="text-lg font-semibold text-slate-800 mb-2">Откройте в Telegram</h2>
+          <p className="text-slate-600 text-sm mb-6">
+            Нажмите <strong>Start</strong> в боте, затем кнопку <strong>Open</strong>, чтобы войти.
           </p>
+          <a
+            href={process.env.NEXT_PUBLIC_TELEGRAM_BOT_LINK ?? 'https://t.me/save_you_time_bot'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block"
+          >
+            <Button className="rounded-2xl px-6">Открыть бота</Button>
+          </a>
         </Card>
       )}
 

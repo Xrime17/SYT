@@ -19,8 +19,8 @@ export async function getTasks(userId: string): Promise<Task[]> {
   return request<Task[]>(`/tasks/${userId}`);
 }
 
-export async function getTaskById(taskId: string): Promise<Task | null> {
-  return request<Task | null>(`/tasks/task/${taskId}`);
+export async function getTaskById(taskId: string): Promise<Task> {
+  return request<Task>(`/tasks/task/${taskId}`);
 }
 
 export async function createTask(data: {

@@ -51,10 +51,14 @@ export class TasksService {
     });
   }
 
-  async getTaskById(taskId: string): Promise<Task | null> {
-    return this.prisma.task.findUnique({
+  async getTaskById(taskId: string): Promise<Task> {
+    const task = await this.prisma.task.findUnique({
       where: { id: taskId },
     });
+    if (!task) {
+      throw new NotFoundException(`Task with id ${taskId} not found`);
+    }
+    return task;
   }
 
   async updateTask(
