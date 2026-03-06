@@ -2,8 +2,7 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-ENV NODE_ENV=production
-
+# Устанавливаем все зависимости (включая dev) для сборки — rimraf, nest-cli, prisma, typescript
 COPY package.json nest-cli.json tsconfig*.json ./
 COPY prisma ./prisma
 RUN npm install
@@ -26,5 +25,6 @@ COPY --from=builder /app/prisma ./prisma
 
 EXPOSE 3000
 
+# Миграции в Supabase применяются вручную (pooler не поддерживает migrate). Старт приложения:
 CMD ["node", "dist/main.js"]
 
