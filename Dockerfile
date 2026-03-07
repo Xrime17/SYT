@@ -25,6 +25,6 @@ COPY --from=builder /app/prisma ./prisma
 
 EXPOSE 3000
 
-# Миграции в Supabase применяются вручную (pooler не поддерживает migrate). Старт приложения:
-CMD ["node", "dist/main.js"]
+# Railway: миграции применяются при старте, затем запуск приложения
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
 
