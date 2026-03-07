@@ -1,5 +1,4 @@
 import type { NextConfig } from "next";
-import path from "path";
 import bundleAnalyzer from "@next/bundle-analyzer";
 
 const withBundleAnalyzer = bundleAnalyzer({
@@ -9,7 +8,6 @@ const withBundleAnalyzer = bundleAnalyzer({
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  outputFileTracingRoot: path.join(__dirname, "../../"),
   experimental: {
     optimizePackageImports: ["@/components", "@/api", "@/hooks", "@/context"],
   },
