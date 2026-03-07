@@ -26,10 +26,11 @@ export async function getOrCreateUserByTelegram(data: {
   lastName?: string;
   username?: string;
   timezone?: string;
-}): Promise<User> {
+}, timeoutMs?: number): Promise<User> {
   return request<User>('/users/telegram/get-or-create', {
     method: 'POST',
     body: JSON.stringify(data),
+    ...(timeoutMs ? { timeoutMs } : {}),
   });
 }
 

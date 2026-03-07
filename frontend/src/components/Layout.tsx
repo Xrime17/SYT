@@ -23,17 +23,14 @@ function NavLink({
   href,
   children,
   active,
-  prefetch,
 }: {
   href: string;
   children: React.ReactNode;
   active?: boolean;
-  prefetch?: boolean;
 }) {
   return (
     <Link
       href={href}
-      prefetch={prefetch}
       className={`rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 ${
         active
           ? 'bg-gradient-to-r from-indigo-500 to-indigo-400 text-white shadow-md shadow-indigo-500/25'
@@ -79,10 +76,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <NavLink href="/tasks" active={pathname === '/tasks'}>
               Задачи
             </NavLink>
-            <NavLink href="/recurring" prefetch={false} active={pathname === '/recurring'}>
+            <NavLink href="/recurring" active={pathname === '/recurring'}>
               Повторения
             </NavLink>
-            <NavLink href="/reminders" prefetch={false} active={pathname === '/reminders'}>
+            <NavLink href="/reminders" active={pathname === '/reminders'}>
               Напоминания
             </NavLink>
           </nav>
@@ -148,7 +145,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </Link>
           <Link
             href="/recurring"
-            prefetch={false}
             className={`flex flex-col items-center justify-center flex-1 py-2 text-xs transition-all duration-200 rounded-lg mx-1 ${
               pathname === '/recurring' ? 'text-indigo-600 font-medium' : 'text-slate-500 hover:text-slate-700'
             }`}
@@ -161,7 +157,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </Link>
           <Link
             href="/reminders"
-            prefetch={false}
             className={`flex flex-col items-center justify-center flex-1 py-2 text-xs transition-all duration-200 rounded-lg mx-1 ${
               pathname === '/reminders' ? 'text-indigo-600 font-medium' : 'text-slate-500 hover:text-slate-700'
             }`}

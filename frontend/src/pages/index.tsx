@@ -1,19 +1,33 @@
 'use client';
 
-import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import { useEffect } from 'react';
 import { useUser } from '@/context/UserContext';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 
-const OpenInTelegramCard = dynamic(() => import('@/components/OpenInTelegramCard').then((m) => m.OpenInTelegramCard), {
-  ssr: false,
-  loading: () => <div className="mb-6 h-48 animate-pulse rounded-2xl bg-slate-100" />,
-});
+const BOT_LINK = process.env.NEXT_PUBLIC_TELEGRAM_BOT_LINK ?? 'https://t.me/save_you_time_bot';
 
 export default function Home() {
   const { user, telegramLoading, telegramError, isInTelegram } = useUser();
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const inTelegram =
+      isInTelegram ||
+      params.has('tgWebAppData') ||
+      params.has('tgWebAppVersion') ||
+      !!window.Telegram?.WebApp?.initDataUnsafe?.user ||
+      !!window.Telegram?.WebApp ||
+      (document.referrer ? /t\.me|telegram\.(me|org)/i.test(document.referrer) : false) ||
+      window.self !== window.top;
+
+    if (!inTelegram) {
+      window.location.replace(BOT_LINK);
+    }
+  }, [isInTelegram]);
 
   return (
     <Layout>
@@ -24,7 +38,14 @@ export default function Home() {
         Трекер задач
       </h1>
 
-      {!isInTelegram && <OpenInTelegramCard />}
+      {!isInTelegram && (
+        <Card className="p-6 max-w-md text-center">
+          <p className="text-slate-600 text-sm">Перенаправляем в Telegram…</p>
+          <a href={BOT_LINK} target="_blank" rel="noopener noreferrer" className="inline-block mt-4">
+            <Button className="rounded-2xl px-6">Открыть бота</Button>
+          </a>
+        </Card>
+      )}
 
       {isInTelegram && telegramLoading && !user && (
         <Card className="p-8 text-center max-w-md bg-white shadow-lg">
@@ -41,6 +62,18 @@ export default function Home() {
           <Button variant="secondary" className="w-full rounded-2xl" onClick={() => window.location.reload()}>
             Обновить страницу
           </Button>
+        </Card>
+      )}
+
+      {isInTelegram && !telegramLoading && !telegramError && !user && (
+        <Card className="p-6 max-w-md">
+          <p className="text-slate-700 font-medium mb-2">Подключаем аккаунт в фоне…</p>
+          <p className="text-slate-500 text-sm mb-4">
+            Приложение уже открыто. Можно продолжить, пока сервер просыпается.
+          </p>
+          <Link href="/tracker">
+            <Button className="w-full rounded-2xl py-3">Открыть трекер сейчас</Button>
+          </Link>
         </Card>
       )}
 

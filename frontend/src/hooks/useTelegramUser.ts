@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useUser } from '@/context/UserContext';
-import { getOrCreateUserByTelegram } from '@/api/users';
+import { getOrCreateUserByTelegram, type User } from '@/api/users';
 
 /**
  * In Telegram Mini App: load script if needed, then get-or-create user (1 API call) and set in context.
@@ -16,12 +16,47 @@ export function useTelegramUser() {
     setTelegramInContext,
   } = useUser();
   const loadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const unblockTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    const CACHE_KEY = 'syt:telegram-user-cache';
+
+    const readCachedUser = (telegramId: number): User | null => {
+      try {
+        const raw = window.localStorage.getItem(CACHE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw) as {
+          telegramId: number;
+          user: User;
+          cachedAt: number;
+        };
+        if (!parsed || parsed.telegramId !== telegramId || !parsed.user) return null;
+        return parsed.user;
+      } catch {
+        return null;
+      }
+    };
+
+    const writeCachedUser = (telegramId: number, user: User) => {
+      try {
+        window.localStorage.setItem(
+          CACHE_KEY,
+          JSON.stringify({
+            telegramId,
+            user,
+            cachedAt: Date.now(),
+          })
+        );
+      } catch {
+        // ignore cache write errors
+      }
+    };
 
     const mightBeTelegram = () => {
       try {
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('tgWebAppData') || params.has('tgWebAppVersion')) return true;
         if (window.Telegram?.WebApp?.initDataUnsafe?.user) return true;
         if (document.referrer && /t\.me|telegram\.(me|org)/i.test(document.referrer)) return true;
         return window.self !== window.top;
@@ -36,16 +71,30 @@ export function useTelegramUser() {
           resolve();
           return;
         }
-        const existing = document.querySelector('script[src*="telegram-web-app"]');
+        let settled = false;
+        const finish = () => {
+          if (settled) return;
+          settled = true;
+          resolve();
+        };
+        const existing = document.querySelector<HTMLScriptElement>('script[src*="telegram-web-app"]');
         if (existing) {
-          existing.addEventListener('load', () => resolve());
+          // Script might already be loaded before listener registration.
+          if (window.Telegram?.WebApp) {
+            finish();
+            return;
+          }
+          existing.addEventListener('load', finish, { once: true });
+          existing.addEventListener('error', finish, { once: true });
+          setTimeout(finish, 5000);
           return;
         }
         const script = document.createElement('script');
         script.src = 'https://telegram.org/js/telegram-web-app.js';
         script.async = true;
-        script.onload = () => resolve();
-        script.onerror = () => resolve();
+        script.onload = finish;
+        script.onerror = finish;
+        setTimeout(finish, 5000);
         document.head.appendChild(script);
       });
 
@@ -67,39 +116,88 @@ export function useTelegramUser() {
       const firstName = tgUser.first_name ?? '';
       const lastName = tgUser.last_name ?? undefined;
       const username = tgUser.username ?? undefined;
+      const cachedUser = readCachedUser(telegramId);
+      let unblocked = false;
+
+      const unblockUi = () => {
+        if (unblocked) return;
+        unblocked = true;
+        setTelegramLoading(false);
+      };
 
       setTelegramError(null);
-      loadTimeoutRef.current = setTimeout(() => {
-        setTelegramError('Сервер не отвечает. Проверьте интернет и обновите страницу.');
-        setTelegramLoading(false);
-      }, 30000);
-      getOrCreateUserByTelegram({
-        telegramId,
-        firstName,
-        lastName,
-        username,
-      })
-        .then(setUser)
-        .catch((e) => {
-          setTelegramError(e instanceof Error ? e.message : 'Ошибка входа');
-        })
-        .finally(() => {
-          if (loadTimeoutRef.current) {
-            clearTimeout(loadTimeoutRef.current);
-            loadTimeoutRef.current = null;
-          }
-          setTelegramLoading(false);
-        });
-    };
+      if (cachedUser) {
+        // Fast path: instantly restore previous session while refreshing in background.
+        setUser(cachedUser);
+        unblockUi();
+      } else {
+        // First open: don't block UI for a cold backend start.
+        unblockTimeoutRef.current = setTimeout(unblockUi, 1200);
+        loadTimeoutRef.current = setTimeout(() => {
+          setTelegramError('Сервер не отвечает. Проверьте интернет и обновите страницу.');
+          unblockUi();
+        }, 12000);
+      }
 
-    if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
-      run();
-      return () => {
+      const syncUser = async () => {
+        const attempts = [3500, 5000, 7000];
+        let lastError: unknown;
+        for (let i = 0; i < attempts.length; i += 1) {
+          try {
+            const freshUser = await getOrCreateUserByTelegram(
+              {
+                telegramId,
+                firstName,
+                lastName,
+                username,
+              },
+              attempts[i]
+            );
+            setUser(freshUser);
+            writeCachedUser(telegramId, freshUser);
+            setTelegramError(null);
+            return;
+          } catch (e) {
+            lastError = e;
+            if (i < attempts.length - 1) {
+              await new Promise((resolve) => setTimeout(resolve, 1000 * (i + 1)));
+            }
+          }
+        }
+        if (!cachedUser) {
+          setTelegramError(lastError instanceof Error ? lastError.message : 'Ошибка входа');
+        }
+      };
+
+      syncUser().finally(() => {
         if (loadTimeoutRef.current) {
           clearTimeout(loadTimeoutRef.current);
           loadTimeoutRef.current = null;
         }
-      };
+        if (unblockTimeoutRef.current) {
+          clearTimeout(unblockTimeoutRef.current);
+          unblockTimeoutRef.current = null;
+        }
+        if (!cachedUser) {
+          unblockUi();
+        }
+      });
+    };
+
+    const clearTimers = () => {
+      if (loadTimeoutRef.current) {
+        clearTimeout(loadTimeoutRef.current);
+        loadTimeoutRef.current = null;
+      }
+      if (unblockTimeoutRef.current) {
+        clearTimeout(unblockTimeoutRef.current);
+        unblockTimeoutRef.current = null;
+      }
+    };
+
+    if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
+      run();
+      return clearTimers;
     }
     if (!mightBeTelegram()) {
       setTelegramInContext(false);
@@ -112,10 +210,7 @@ export function useTelegramUser() {
     });
     return () => {
       cancelled = true;
-      if (loadTimeoutRef.current) {
-        clearTimeout(loadTimeoutRef.current);
-        loadTimeoutRef.current = null;
-      }
+      clearTimers();
     };
   }, [setUser, setTelegramLoading, setTelegramError, setTelegramInContext]);
 }

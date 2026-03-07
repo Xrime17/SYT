@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Priority, Task, TaskType } from '@prisma/client';
+import { Prisma, Priority, Task, TaskType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 export type UpdateTaskData = {
@@ -26,22 +26,26 @@ export class TasksService {
     description?: string,
     options?: CreateTaskOptions,
   ): Promise<Task> {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-    });
-    if (!user) {
-      throw new NotFoundException(`User with id ${userId} not found`);
+    try {
+      return await this.prisma.task.create({
+        data: {
+          userId,
+          title,
+          description,
+          ...(options?.dueDate !== undefined && { dueDate: options.dueDate }),
+          ...(options?.priority !== undefined && { priority: options.priority }),
+          ...(options?.type !== undefined && { type: options.type }),
+        },
+      });
+    } catch (e) {
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2003'
+      ) {
+        throw new NotFoundException(`User with id ${userId} not found`);
+      }
+      throw e;
     }
-    return this.prisma.task.create({
-      data: {
-        userId,
-        title,
-        description,
-        ...(options?.dueDate !== undefined && { dueDate: options.dueDate }),
-        ...(options?.priority !== undefined && { priority: options.priority }),
-        ...(options?.type !== undefined && { type: options.type }),
-      },
-    });
   }
 
   async getTasks(userId: string): Promise<Task[]> {
@@ -65,24 +69,30 @@ export class TasksService {
     taskId: string,
     data: UpdateTaskData,
   ): Promise<Task> {
-    const task = await this.prisma.task.findUnique({
-      where: { id: taskId },
-    });
-    if (!task) {
-      throw new NotFoundException(`Task with id ${taskId} not found`);
+    try {
+      return await this.prisma.task.update({
+        where: { id: taskId },
+        data: {
+          ...(data.title !== undefined && { title: data.title }),
+          ...(data.description !== undefined && {
+            description: data.description,
+          }),
+          ...(data.status !== undefined && { status: data.status }),
+          ...(data.priority !== undefined && { priority: data.priority }),
+          ...(data.dueDate !== undefined && {
+            dueDate: data.dueDate === null ? null : data.dueDate,
+          }),
+        },
+      });
+    } catch (e) {
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2025'
+      ) {
+        throw new NotFoundException(`Task with id ${taskId} not found`);
+      }
+      throw e;
     }
-    return this.prisma.task.update({
-      where: { id: taskId },
-      data: {
-        ...(data.title !== undefined && { title: data.title }),
-        ...(data.description !== undefined && { description: data.description }),
-        ...(data.status !== undefined && { status: data.status }),
-        ...(data.priority !== undefined && { priority: data.priority }),
-        ...(data.dueDate !== undefined && {
-          dueDate: data.dueDate === null ? null : data.dueDate,
-        }),
-      },
-    });
   }
 
   async deleteTask(taskId: string): Promise<Task> {

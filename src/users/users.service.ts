@@ -82,15 +82,17 @@ export class UsersService {
     username?: string,
     timezone?: string,
   ): Promise<User> {
-    const existing = await this.findUserByTelegramId(telegramId);
-    if (existing) return existing;
-    return this.createUser(
-      telegramId,
-      firstName,
-      lastName,
-      username,
-      timezone,
-    );
+    return this.prisma.user.upsert({
+      where: { telegramId: BigInt(telegramId) },
+      update: {},
+      create: {
+        telegramId: BigInt(telegramId),
+        firstName,
+        lastName,
+        username,
+        timezone,
+      },
+    });
   }
 
   async updateUser(id: string, data: UpdateUserData): Promise<User> {
