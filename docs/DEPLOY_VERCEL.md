@@ -246,7 +246,7 @@ WEB_APP_URL=https://syt-xxx.vercel.app
 2. **New Project** → **Deploy from GitHub repo** → выбери репозиторий **SYT**.
 3. В настройках проекта укажи **Root Directory**: корень репо (не `frontend` — деплоим бэкенд). **Start Command:** `npm run start:prod` (или `npx prisma migrate deploy && node dist/main.js` если миграции нужны при старте). **Build Command:** `npm install && npx prisma generate && npm run build`.
 4. Добавь сервис **PostgreSQL** в тот же проект (Railway создаст БД и подставит `DATABASE_URL`). Если появится ошибка pool timeout — добавь в конец `DATABASE_URL` параметр `?connection_limit=10`.
-5. В **Variables** задай: `TELEGRAM_BOT_TOKEN`, `WEB_APP_URL=https://syt-two.vercel.app` (твой фронт на Vercel).
+5. В **Variables** задай: `TELEGRAM_BOT_TOKEN`, `WEB_APP_URL=https://syt-two.vercel.app` (твой фронт на Vercel), **`PUBLIC_URL`** = публичный URL бэкенда (тот же, что в п. 6, например `https://syt-production-xxxx.up.railway.app`). Если `PUBLIC_URL` задан, бот переходит в режим **webhook**: когда пользователь открывает бота и нажимает Start, Telegram шлёт запрос на твой сервер → Railway просыпается **до** нажатия Open, и Mini App открывается быстрее.
 6. В **Settings** включи **Public Networking** и скопируй сгенерированный домен (например `https://syt-production-xxxx.up.railway.app`).
 7. В Vercel в **Environment Variables** задай `NEXT_PUBLIC_API_URL` = этот URL → **Redeploy**.
 
@@ -309,6 +309,7 @@ WEB_APP_URL=https://syt-xxx.vercel.app
 - **Пауза проекта (Hobby):** на бесплатном плане Vercel проект «засыпает» после длительного простоя. Первый запрос будит его — ответ может идти 10–30+ секунд, в Network видно долгое ожидание первого байта. Решение: зайти в [Vercel Dashboard](https://vercel.com) → проект → один раз открыть деплой или сделать Redeploy; следующие запросы будут быстрее за счёт кэша.
 - **Проверка домена:** открой **дефолтный URL** (например `https://syt-xxx.vercel.app`) и сравни с `https://sytime.online`. Если на `.vercel.app` страница грузится, а на своём домене нет — возможна задержка DNS или настройки домена.
 - **Кэш:** в проекте для главной страницы заданы заголовки `Cache-Control` (в `next.config.ts`), чтобы после первой загрузки ответ отдавался с edge. После первого (возможно долгого) запроса повторные должны быть быстрее.
+- **Cold start бэкенда (Railway и др.):** если API задеплоен на Railway (или Render/Koyeb), сервис после простоя может «засыпать». Первый запрос (get-or-create пользователя, загрузка задач) тогда идёт 30–120 секунд. Что сделано в коде: при открытии в Telegram сразу отправляется лёгкий запрос на `GET /health`, чтобы сервис начал просыпаться; интерфейс разблокируется через ~0.4 с и показывается экран «Подключаем в фоне» с кнопкой «Открыть трекер». Чтобы бэкенд не засыпал, можно держать его «в тепле»: [cron-job.org](https://cron-job.org) или аналог — раз в 5–10 минут вызывать `GET https://твой-api.up.railway.app/health`. Тогда первый запрос от пользователя будет быстрым.
 
 ## Кратко
 

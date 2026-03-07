@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { useUser } from '@/context/UserContext';
 import { getOrCreateUserByTelegram, type User } from '@/api/users';
+import { API_BASE } from '@/api/client';
 
 /**
  * In Telegram Mini App: load script if needed, then get-or-create user (1 API call) and set in context.
@@ -112,6 +113,13 @@ export function useTelegramUser() {
       tg?.ready();
       tg?.expand();
 
+      // Wake up Railway (or any sleeping backend) with a cheap request so get-or-create is faster.
+      try {
+        fetch(`${API_BASE}/health`, { method: 'GET' }).catch(() => {});
+      } catch {
+        // ignore
+      }
+
       const telegramId = tgUser.id;
       const firstName = tgUser.first_name ?? '';
       const lastName = tgUser.last_name ?? undefined;
@@ -131,8 +139,8 @@ export function useTelegramUser() {
         setUser(cachedUser);
         unblockUi();
       } else {
-        // First open: don't block UI for a cold backend start.
-        unblockTimeoutRef.current = setTimeout(unblockUi, 1200);
+        // First open: show "подключаем в фоне" almost immediately so app feels loaded.
+        unblockTimeoutRef.current = setTimeout(unblockUi, 400);
         loadTimeoutRef.current = setTimeout(() => {
           setTelegramError('Сервер не отвечает. Проверьте интернет и обновите страницу.');
           unblockUi();

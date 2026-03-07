@@ -59,34 +59,66 @@ export class TelegramService implements OnModuleInit {
     this.bot.on('message', (ctx: TelegrafContext) => this.handleMessage(ctx));
     this.bot.on('callback_query', (ctx: CallbackCtx) => this.handleCallback(ctx));
 
-    // Запуск бота в фоне, чтобы не блокировать подъём HTTP-сервера (listen)
-    void this.launchBot();
+    void this.setupWebhook();
   }
 
-  private async launchBot(): Promise<void> {
+  /**
+   * Handle incoming Telegram update (webhook). Called by TelegramWebhookController.
+   * This wakes Railway when user opens the bot and sends /start, before they tap "Open".
+   */
+  async handleWebhook(update: Record<string, unknown>): Promise<void> {
     if (!this.bot) return;
-    try {
+    await this.bot.handleUpdate(update as unknown as import('telegraf/types').Update);
+  }
+
+  private async setupWebhook(): Promise<void> {
+    if (!this.bot) return;
+    const publicUrl = this.configService.get<string>('PUBLIC_URL');
+    if (!publicUrl) {
+      this.logger.warn(
+        'PUBLIC_URL not set; Telegram webhook not registered. Set PUBLIC_URL to your backend URL (e.g. https://xxx.up.railway.app) for webhook mode.',
+      );
       await this.bot.launch();
-      const webAppUrl = this.configService.get<string>('WEB_APP_URL');
-      if (webAppUrl) {
-        try {
-          await this.bot.telegram.setChatMenuButton({
-            menuButton: {
-              type: 'web_app',
-              text: 'Open',
-              web_app: { url: webAppUrl },
-            },
-          });
-          this.logger.log(`Menu button "Open" set → ${webAppUrl}`);
-        } catch (err) {
-          this.logger.warn('Failed to set menu button: ' + (err instanceof Error ? err.message : String(err)));
-        }
-      } else {
-        this.logger.warn('WEB_APP_URL not set; menu button not configured');
-      }
-      this.logger.log('Telegram bot launched');
+      await this.setMenuButton();
+      this.logger.log('Telegram bot launched (polling)');
+      return;
+    }
+    const webhookPath = '/telegram/webhook';
+    const webhookUrl = publicUrl.replace(/\/$/, '') + webhookPath;
+    try {
+      await this.bot.telegram.setWebhook(webhookUrl);
+      await this.setMenuButton();
+      this.logger.log(`Telegram webhook set → ${webhookUrl}`);
     } catch (err) {
-      this.logger.error('Telegram bot failed to launch: ' + (err instanceof Error ? err.message : String(err)));
+      this.logger.error(
+        'Failed to set webhook: ' + (err instanceof Error ? err.message : String(err)),
+      );
+      await this.bot.launch();
+      await this.setMenuButton();
+      this.logger.log('Telegram bot launched (polling fallback)');
+    }
+  }
+
+  private async setMenuButton(): Promise<void> {
+    if (!this.bot) return;
+    const webAppUrl = this.configService.get<string>('WEB_APP_URL');
+    if (!webAppUrl) {
+      this.logger.warn('WEB_APP_URL not set; menu button not configured');
+      return;
+    }
+    try {
+      await this.bot.telegram.setChatMenuButton({
+        menuButton: {
+          type: 'web_app',
+          text: 'Open',
+          web_app: { url: webAppUrl },
+        },
+      });
+      this.logger.log(`Menu button "Open" set → ${webAppUrl}`);
+    } catch (err) {
+      this.logger.warn(
+        'Failed to set menu button: ' + (err instanceof Error ? err.message : String(err)),
+      );
     }
   }
 

@@ -5,6 +5,7 @@ import { RemindersModule } from '../reminders/reminders.module';
 import { TasksModule } from '../tasks/tasks.module';
 import { UsersModule } from '../users/users.module';
 import { TelegramService } from './telegram.service';
+import { TelegramWebhookController } from './telegram-webhook.controller';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { TelegramService } from './telegram.service';
     RecurringModule,
     RemindersModule,
   ],
+  controllers: [TelegramWebhookController],
   providers: [TelegramService],
   exports: [TelegramService],
 })
