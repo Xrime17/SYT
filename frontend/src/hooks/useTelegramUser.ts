@@ -6,8 +6,7 @@ import { getUserByTelegramId } from '@/api/users';
 import { createUser } from '@/api/users';
 
 /**
- * When running inside Telegram Mini App: reads initDataUnsafe.user,
- * fetches or creates backend user, and sets it in UserContext.
+ * In Telegram Mini App: load script if needed, then get/create user from API and set in context.
  */
 export function useTelegramUser() {
   const {
@@ -21,6 +20,35 @@ export function useTelegramUser() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    const mightBeTelegram = () => {
+      try {
+        if (window.Telegram?.WebApp?.initDataUnsafe?.user) return true;
+        if (document.referrer && /t\.me|telegram\.(me|org)/i.test(document.referrer)) return true;
+        return window.self !== window.top;
+      } catch {
+        return false;
+      }
+    };
+
+    const loadTelegramScript = (): Promise<void> =>
+      new Promise((resolve) => {
+        if (window.Telegram?.WebApp) {
+          resolve();
+          return;
+        }
+        const existing = document.querySelector('script[src*="telegram-web-app"]');
+        if (existing) {
+          existing.addEventListener('load', () => resolve());
+          return;
+        }
+        const script = document.createElement('script');
+        script.src = 'https://telegram.org/js/telegram-web-app.js';
+        script.async = true;
+        script.onload = () => resolve();
+        script.onerror = () => resolve();
+        document.head.appendChild(script);
+      });
+
     const run = () => {
       const tg = window.Telegram?.WebApp;
       const tgUser = tg?.initDataUnsafe?.user;
@@ -29,13 +57,6 @@ export function useTelegramUser() {
         setTelegramLoading(false);
         return;
       }
-      runWithUser(tg, tgUser);
-    };
-
-    const runWithUser = (
-      tg: NonNullable<typeof window.Telegram>['WebApp'],
-      tgUser: NonNullable<NonNullable<typeof window.Telegram>['WebApp']['initDataUnsafe']['user']>
-    ) => {
 
       tg?.ready();
       tg?.expand();
@@ -45,9 +66,9 @@ export function useTelegramUser() {
       const lastName = tgUser.last_name ?? undefined;
       const username = tgUser.username ?? undefined;
 
+      setTelegramError(null);
       (async () => {
         try {
-          setTelegramError(null);
           try {
             const u = await getUserByTelegramId(String(telegramId));
             setUser(u);
@@ -68,12 +89,21 @@ export function useTelegramUser() {
       })();
     };
 
-    if (window.Telegram?.WebApp) {
+    if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
       run();
       return;
     }
-    const t = window.setTimeout(() => run(), 300);
-    return () => window.clearTimeout(t);
+    if (!mightBeTelegram()) {
+      setTelegramLoading(false);
+      return;
+    }
+    let cancelled = false;
+    loadTelegramScript().then(() => {
+      if (!cancelled) run();
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [setUser, setTelegramLoading, setTelegramError]);
 
   const isInTelegram =
