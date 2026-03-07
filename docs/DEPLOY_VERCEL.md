@@ -245,7 +245,7 @@ WEB_APP_URL=https://syt-xxx.vercel.app
 1. Зайди на [railway.app](https://railway.app), войди через GitHub.
 2. **New Project** → **Deploy from GitHub repo** → выбери репозиторий **SYT**.
 3. В настройках проекта укажи **Root Directory**: корень репо (не `frontend` — деплоим бэкенд). **Start Command:** `npm run start:prod` (или `npx prisma migrate deploy && node dist/main.js` если миграции нужны при старте). **Build Command:** `npm install && npx prisma generate && npm run build`.
-4. Добавь сервис **PostgreSQL** в тот же проект (Railway создаст БД и подставит `DATABASE_URL`).
+4. Добавь сервис **PostgreSQL** в тот же проект (Railway создаст БД и подставит `DATABASE_URL`). Если появится ошибка pool timeout — добавь в конец `DATABASE_URL` параметр `?connection_limit=10`.
 5. В **Variables** задай: `TELEGRAM_BOT_TOKEN`, `WEB_APP_URL=https://syt-two.vercel.app` (твой фронт на Vercel).
 6. В **Settings** включи **Public Networking** и скопируй сгенерированный домен (например `https://syt-production-xxxx.up.railway.app`).
 7. В Vercel в **Environment Variables** задай `NEXT_PUBLIC_API_URL` = этот URL → **Redeploy**.
@@ -264,7 +264,7 @@ WEB_APP_URL=https://syt-xxx.vercel.app
    - `DATABASE_URL` — строка подключения к PostgreSQL (см. ниже).
    - `TELEGRAM_BOT_TOKEN` — токен бота.
    - `WEB_APP_URL` — URL фронта на Vercel, например `https://syt-two.vercel.app`.
-5. **PostgreSQL:** в Koyeb в том же проекте создай **Database** (Add Service → Database → PostgreSQL) — скопируй выданный `DATABASE_URL` в переменные сервиса. Либо используй внешнюю БД (Neon, Supabase и т.д.) и подставь её URL в `DATABASE_URL`.
+5. **PostgreSQL:** в Koyeb в том же проекте создай **Database** (Add Service → Database → PostgreSQL) — скопируй выданный `DATABASE_URL` в переменные сервиса. Либо используй внешнюю БД (Railway, Neon и т.д.) и подставь её URL в `DATABASE_URL`.
 6. **Instance type:** бесплатный (если доступен). **Region:** например Frankfurt.
 7. Запусти деплой. После сборки Koyeb выдаст публичный URL (например `https://xxx.koyeb.app`). В **Vercel** в Environment Variables задай `NEXT_PUBLIC_API_URL` = этот URL → Redeploy.
 
@@ -299,6 +299,10 @@ WEB_APP_URL=https://syt-xxx.vercel.app
 4. Переменная **NEXT_PUBLIC_API_URL**: если бэкенд по туннелю (ngrok/cloudflared), задай её в Vercel: **Dashboard → проект → Settings → Environment Variables** → добавь `NEXT_PUBLIC_API_URL` = URL бэкенда → **Redeploy**.
 
 После деплоя URL будет в выводе (например `https://syt-two.vercel.app`). Этот же URL должен быть в `.env` как **WEB_APP_URL**.
+
+## Connection pool timeout (Prisma)
+
+Если в логах: `Timed out fetching a new connection from the connection pool` — добавь `?connection_limit=10` в конец `DATABASE_URL` (Railway, local и т.д.). Без этого при API + планировщике напоминаний соединений не хватает.
 
 ## Если сайт долго грузится или «0 B transferred»
 

@@ -1,7 +1,18 @@
 import type { NextConfig } from "next";
+import path from "path";
+import bundleAnalyzer from "@next/bundle-analyzer";
+
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === "true",
+});
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  poweredByHeader: false,
+  outputFileTracingRoot: path.join(__dirname, "../../"),
+  experimental: {
+    optimizePackageImports: ["@/components", "@/api", "@/hooks", "@/context"],
+  },
   async headers() {
     return [
       {
@@ -9,7 +20,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: "public, s-maxage=3600, stale-while-revalidate=60",
+            value: "public, s-maxage=86400, stale-while-revalidate=300",
           },
         ],
       },
@@ -49,8 +60,17 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        source: "/_next/static/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
     ];
   },
 };
 
-export default nextConfig;
+export default withBundleAnalyzer(nextConfig);

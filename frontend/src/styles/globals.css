@@ -14,9 +14,7 @@
   --gradient-from: #e0e7ff;
   --gradient-via: #eef2ff;
   --gradient-to: #f1f5f9;
-  --gradient-mesh: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(129, 140, 248, 0.25), transparent),
-    radial-gradient(ellipse 60% 40% at 100% 50%, rgba(196, 181, 253, 0.15), transparent),
-    radial-gradient(ellipse 50% 30% at 0% 80%, rgba(165, 180, 252, 0.2), transparent);
+  --gradient-mesh: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(129, 140, 248, 0.2), transparent);
 }
 
 @theme inline {
@@ -74,7 +72,7 @@ main {
 }
 
 .animate-in {
-  animation: fadeSlideUp 0.4s ease-out forwards;
+  animation: fadeSlideUp 0.2s ease-out forwards;
 }
 
 .animate-in-delay-1 { animation-delay: 0.05s; opacity: 0; }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { Layout } from '@/components/Layout';
@@ -17,20 +17,23 @@ export default function NewTaskPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!user || !title.trim()) return;
-    setError(null);
-    setLoading(true);
-    try {
-      await createTask({ userId: user.id, title: title.trim(), description: description.trim() || undefined });
-      router.push('/tasks');
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Ошибка');
-    } finally {
-      setLoading(false);
-    }
-  }
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!user || !title.trim()) return;
+      setError(null);
+      setLoading(true);
+      try {
+        await createTask({ userId: user.id, title: title.trim(), description: description.trim() || undefined });
+        router.push('/tasks');
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Ошибка');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [user, title, router]
+  );
 
   return (
     <Layout>

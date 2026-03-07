@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { memo } from 'react';
 import type { Task } from '@/api/tasks';
 
 interface TaskItemProps {
@@ -9,7 +9,7 @@ interface TaskItemProps {
   onDelete?: (task: Task) => void;
 }
 
-export function TaskItem({ task, onToggleDone, onDelete }: TaskItemProps) {
+export const TaskItem = memo(function TaskItem({ task, onToggleDone, onDelete }: TaskItemProps) {
   const isCompleted = task.status === 'COMPLETED';
 
   return (
@@ -62,4 +62,4 @@ export function TaskItem({ task, onToggleDone, onDelete }: TaskItemProps) {
       )}
     </div>
   );
-}
+});

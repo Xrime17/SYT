@@ -1,6 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
+import useSWR from 'swr';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/Button';
@@ -9,66 +11,66 @@ import { TaskItem } from '@/components/TaskItem';
 import { useUser } from '@/context/UserContext';
 import { getTasks, updateTask, deleteTask, type Task } from '@/api/tasks';
 
-const BOT_LINK = process.env.NEXT_PUBLIC_TELEGRAM_BOT_LINK ?? 'https://t.me/save_you_time_bot';
+const OpenInTelegramCard = dynamic(
+  () => import('@/components/OpenInTelegramCard').then((m) => m.OpenInTelegramCard),
+  { ssr: false, loading: () => <div className="h-48 animate-pulse rounded-2xl bg-slate-100" /> }
+);
 
 export default function TasksPage() {
   const { user, isInTelegram, telegramLoading, telegramError } = useUser();
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [mutateError, setMutateError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!user?.id) {
-      queueMicrotask(() => setLoading(false));
-      return;
-    }
-    let cancelled = false;
-    queueMicrotask(() => {
-      if (!cancelled) setError(null);
-    });
-    getTasks(user.id)
-      .then((data) => {
-        if (!cancelled) setTasks(data);
-      })
-      .catch((e) => {
-        if (cancelled) return;
-        const msg = e instanceof Error ? e.message : 'Не удалось загрузить задачи';
-        setError(msg === 'Failed to fetch' ? 'Не удалось загрузить задачи. Проверьте подключение.' : msg);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [user?.id]);
+  const { data: tasks = [], error: fetchError, isLoading, mutate } = useSWR(
+    user?.id ? ['tasks', user.id] : null,
+    ([, userId]) => getTasks(userId),
+    { revalidateOnFocus: false }
+  );
 
-  const handleToggle = async (task: Task) => {
-    if (!user) return;
-    const newStatus = task.status === 'COMPLETED' ? 'ACTIVE' : 'COMPLETED';
-    try {
-      const updated = await updateTask(task.id, { status: newStatus });
-      setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Ошибка');
-    }
-  };
+  const handleToggle = useCallback(
+    async (task: Task) => {
+      if (!user) return;
+      const newStatus = task.status === 'COMPLETED' ? 'ACTIVE' : 'COMPLETED';
+      try {
+        const updated = await updateTask(task.id, { status: newStatus });
+        mutate(
+          (prev) => (prev ?? []).map((t) => (t.id === task.id ? updated : t)),
+          { revalidate: false }
+        );
+      } catch (e) {
+        setMutateError(e instanceof Error ? e.message : 'Ошибка');
+      }
+    },
+    [user, mutate]
+  );
 
-  const handleDelete = async (task: Task) => {
-    if (!confirm('Удалить задачу?')) return;
-    try {
-      await deleteTask(task.id);
-      setTasks((prev) => prev.filter((t) => t.id !== task.id));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Ошибка');
-    }
-  };
+  const handleDelete = useCallback(
+    async (task: Task) => {
+      if (!confirm('Удалить задачу?')) return;
+      try {
+        await deleteTask(task.id);
+        mutate((prev) => (prev ?? []).filter((t) => t.id !== task.id), { revalidate: false });
+      } catch (e) {
+        setMutateError(e instanceof Error ? e.message : 'Ошибка');
+      }
+    },
+    [mutate]
+  );
+
+  const error =
+    mutateError ||
+    (fetchError
+      ? fetchError instanceof Error && fetchError.message === 'Failed to fetch'
+        ? 'Не удалось загрузить задачи. Проверьте подключение.'
+        : fetchError instanceof Error
+          ? fetchError.message
+          : 'Не удалось загрузить задачи'
+      : null);
 
   const completed = tasks.filter((t) => t.status === 'COMPLETED').length;
-  const showList = user && !loading && tasks.length > 0;
-  const showEmptyState = user && !loading && tasks.length === 0 && !error;
+  const showList = user && !isLoading && tasks.length > 0;
+  const showEmptyState = user && !isLoading && tasks.length === 0 && !error;
   const showErrorState = user && error;
-  const showAddButton = user && !loading;
+  const showAddButton = user && !isLoading;
 
   return (
     <Layout>
@@ -84,23 +86,9 @@ export default function TasksPage() {
       </div>
 
       {!isInTelegram && !user && (
-        <Card className="p-8 text-center max-w-md mx-auto">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-400 to-indigo-600 text-white flex items-center justify-center text-2xl mx-auto mb-4 shadow-lg shadow-indigo-500/25">
-            ✨
-          </div>
-          <h2 className="text-lg font-semibold text-slate-800 mb-2">Откройте в Telegram</h2>
-          <p className="text-slate-600 text-sm mb-6">
-            Нажмите <strong>Start</strong> в боте, затем кнопку <strong>Open</strong>, чтобы войти и управлять задачами.
-          </p>
-          <a
-            href={BOT_LINK}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block"
-          >
-            <Button className="rounded-2xl px-6">Открыть бота</Button>
-          </a>
-        </Card>
+        <div className="mx-auto max-w-md">
+          <OpenInTelegramCard />
+        </div>
       )}
 
       {isInTelegram && telegramLoading && !user && (
@@ -121,7 +109,7 @@ export default function TasksPage() {
         </Card>
       )}
 
-      {user && loading && (
+      {user && isLoading && (
         <div className="flex flex-col items-center py-12">
           <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4" />
           <p className="text-slate-500 text-sm">Загрузка задач…</p>
@@ -147,12 +135,7 @@ export default function TasksPage() {
       {showList && (
         <div className="space-y-3">
           {tasks.map((task) => (
-            <TaskItem
-              key={task.id}
-              task={task}
-              onToggleDone={handleToggle}
-              onDelete={handleDelete}
-            />
+            <TaskItem key={task.id} task={task} onToggleDone={handleToggle} onDelete={handleDelete} />
           ))}
         </div>
       )}

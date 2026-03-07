@@ -50,7 +50,7 @@
 | `TELEGRAM_BOT_TOKEN` | токен от @BotFather |
 | `WEB_APP_URL`      | URL фронта на Vercel, например `https://syt-two.vercel.app` |
 
-`DATABASE_URL` можно взять из Koyeb Database (шаг 5) или из внешнего сервиса (Neon, Supabase и т.д.).
+`DATABASE_URL` можно взять из Koyeb Database (шаг 5) или из внешнего сервиса (Railway, Neon и т.д.).
 
 ---
 
@@ -64,7 +64,7 @@
 4. Скопируй **Connection string** и вставь в переменную **DATABASE_URL** сервиса (шаг 4). Формат обычно:  
    `postgresql://USER:PASSWORD@HOST:PORT/DATABASE?sslmode=require`
 
-### Вариант B: Внешняя БД (Neon, Supabase и т.д.)
+### Вариант B: Внешняя БД (Railway, Neon и т.д.)
 
 Создай базу в сервисе, скопируй connection string и вставь в **DATABASE_URL** в настройках сервиса на Koyeb.
 

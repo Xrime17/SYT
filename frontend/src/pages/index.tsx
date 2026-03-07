@@ -1,20 +1,19 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { useRouter } from 'next/router';
-import { useEffect } from 'react';
 import { useUser } from '@/context/UserContext';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 
-export default function Home() {
-  const router = useRouter();
-  const { user, telegramLoading, telegramError, isInTelegram } = useUser();
+const OpenInTelegramCard = dynamic(() => import('@/components/OpenInTelegramCard').then((m) => m.OpenInTelegramCard), {
+  ssr: false,
+  loading: () => <div className="mb-6 h-48 animate-pulse rounded-2xl bg-slate-100" />,
+});
 
-  useEffect(() => {
-    if (isInTelegram && user) router.prefetch('/tasks');
-  }, [isInTelegram, user, router]);
+export default function Home() {
+  const { user, telegramLoading, telegramError, isInTelegram } = useUser();
 
   return (
     <Layout>
@@ -25,25 +24,7 @@ export default function Home() {
         Трекер задач
       </h1>
 
-      {!isInTelegram && (
-        <Card className="mb-6 p-8 text-center max-w-md">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-400 to-indigo-600 text-white flex items-center justify-center text-2xl mx-auto mb-4 shadow-lg shadow-indigo-500/25">
-            ✨
-          </div>
-          <h2 className="text-lg font-semibold text-slate-800 mb-2">Откройте в Telegram</h2>
-          <p className="text-slate-600 text-sm mb-6">
-            Нажмите <strong>Start</strong> в боте, затем кнопку <strong>Open</strong>, чтобы войти.
-          </p>
-          <a
-            href={process.env.NEXT_PUBLIC_TELEGRAM_BOT_LINK ?? 'https://t.me/save_you_time_bot'}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block"
-          >
-            <Button className="rounded-2xl px-6">Открыть бота</Button>
-          </a>
-        </Card>
-      )}
+      {!isInTelegram && <OpenInTelegramCard />}
 
       {isInTelegram && telegramLoading && !user && (
         <Card className="p-8 text-center max-w-md bg-white shadow-lg">
@@ -73,7 +54,7 @@ export default function Home() {
           </Link>
         </Card>
       )}
-    <Link href="/tracker" className="block mt-4 text-center text-sm text-slate-500 hover:text-slate-700">
+    <Link href="/tracker" prefetch={false} className="block mt-4 text-center text-sm text-slate-500 hover:text-slate-700">
           Экран в стиле трекера с градиентом →
         </Link>
     </Layout>

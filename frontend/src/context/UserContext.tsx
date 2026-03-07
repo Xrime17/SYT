@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useCallback, useContext, useState } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import type { User } from '@/api/users';
 
 interface UserContextValue {
@@ -25,23 +25,22 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(() => setUserState(null), []);
   const setUser = useCallback((u: User | null) => setUserState(u), []);
 
-  return (
-    <UserContext.Provider
-      value={{
-        user,
-        setUser,
-        logout,
-        telegramLoading,
-        telegramError,
-        isInTelegram,
-        setTelegramLoading,
-        setTelegramError,
-        setTelegramInContext,
-      }}
-    >
-      {children}
-    </UserContext.Provider>
+  const value = useMemo(
+    () => ({
+      user,
+      setUser,
+      logout,
+      telegramLoading,
+      telegramError,
+      isInTelegram,
+      setTelegramLoading,
+      setTelegramError,
+      setTelegramInContext,
+    }),
+    [user, logout, setUser, telegramLoading, telegramError, isInTelegram]
   );
+
+  return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
 }
 
 export function useUser() {
