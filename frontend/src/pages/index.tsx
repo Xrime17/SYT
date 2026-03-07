@@ -41,7 +41,11 @@ export default function Home() {
       )}
 
       {isInTelegram && loading && !user && (
-        <p className="text-slate-500 py-8">Загрузка…</p>
+        <Card className="p-8 text-center max-w-md bg-white shadow-lg">
+          <div className="inline-block w-10 h-10 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4" aria-hidden />
+          <p className="text-slate-700 font-medium">Загрузка…</p>
+          <p className="text-slate-500 text-sm mt-1">Вход через Telegram</p>
+        </Card>
       )}
 
       {isInTelegram && error && (

@@ -21,43 +21,59 @@ export function useTelegramUser() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const tg = window.Telegram?.WebApp;
-    const tgUser = tg?.initDataUnsafe?.user;
+    const run = () => {
+      const tg = window.Telegram?.WebApp;
+      const tgUser = tg?.initDataUnsafe?.user;
 
-    if (!tgUser) {
-      setTelegramLoading(false);
+      if (!tgUser) {
+        setTelegramLoading(false);
+        return;
+      }
+      runWithUser(tg, tgUser);
+    };
+
+    const runWithUser = (
+      tg: NonNullable<typeof window.Telegram>['WebApp'],
+      tgUser: NonNullable<NonNullable<typeof window.Telegram>['WebApp']['initDataUnsafe']['user']>
+    ) => {
+
+      tg?.ready();
+      tg?.expand();
+
+      const telegramId = tgUser.id;
+      const firstName = tgUser.first_name ?? '';
+      const lastName = tgUser.last_name ?? undefined;
+      const username = tgUser.username ?? undefined;
+
+      (async () => {
+        try {
+          setTelegramError(null);
+          try {
+            const u = await getUserByTelegramId(String(telegramId));
+            setUser(u);
+          } catch {
+            const u = await createUser({
+              telegramId,
+              firstName,
+              lastName,
+              username,
+            });
+            setUser(u);
+          }
+        } catch (e) {
+          setTelegramError(e instanceof Error ? e.message : 'Ошибка входа');
+        } finally {
+          setTelegramLoading(false);
+        }
+      })();
+    };
+
+    if (window.Telegram?.WebApp) {
+      run();
       return;
     }
-
-    tg?.ready();
-    tg?.expand();
-
-    const telegramId = tgUser.id;
-    const firstName = tgUser.first_name ?? '';
-    const lastName = tgUser.last_name ?? undefined;
-    const username = tgUser.username ?? undefined;
-
-    (async () => {
-      try {
-        setTelegramError(null);
-        try {
-          const u = await getUserByTelegramId(String(telegramId));
-          setUser(u);
-        } catch {
-          const u = await createUser({
-            telegramId,
-            firstName,
-            lastName,
-            username,
-          });
-          setUser(u);
-        }
-      } catch (e) {
-        setTelegramError(e instanceof Error ? e.message : 'Ошибка входа');
-      } finally {
-        setTelegramLoading(false);
-      }
-    })();
+    const t = window.setTimeout(() => run(), 300);
+    return () => window.clearTimeout(t);
   }, [setUser, setTelegramLoading, setTelegramError]);
 
   const isInTelegram =

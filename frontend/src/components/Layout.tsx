@@ -1,9 +1,23 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useUser } from '@/context/UserContext';
+
+/** In Telegram Mini App, apply Telegram theme to body so content is visible (no random black). */
+function useTelegramTheme() {
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const bg = window.Telegram?.WebApp?.themeParams?.bg_color;
+    if (!bg) return;
+    const prev = document.body.style.background;
+    document.body.style.background = bg;
+    return () => {
+      document.body.style.background = prev;
+    };
+  }, []);
+}
 
 function NavLink({
   href,
@@ -30,6 +44,7 @@ function NavLink({
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
+  useTelegramTheme();
   const { user, logout } = useUser();
   const pathname = usePathname();
   const isTelegram = typeof window !== 'undefined' && !!window.Telegram?.WebApp;
