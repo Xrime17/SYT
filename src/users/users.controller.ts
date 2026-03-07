@@ -26,6 +26,17 @@ export class UsersController {
     );
   }
 
+  @Post('telegram/get-or-create')
+  getOrCreate(@Body() dto: CreateUserDto) {
+    return this.usersService.getOrCreateByTelegram(
+      dto.telegramId,
+      dto.firstName,
+      dto.lastName,
+      dto.username,
+      dto.timezone,
+    );
+  }
+
   @Get('telegram/:telegramId')
   getByTelegramId(@Param('telegramId') telegramId: string) {
     return this.usersService.getUserByTelegramId(Number(telegramId));

@@ -6,8 +6,7 @@ import { RemindersService } from '../reminders/reminders.service';
 import { TasksService } from '../tasks/tasks.service';
 import { UsersService } from '../users/users.service';
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { Telegraf, Markup } = require('telegraf');
+import { Telegraf, Markup } from 'telegraf';
 
 const MSG_NEED_START = 'Сначала /start';
 

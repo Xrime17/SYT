@@ -75,6 +75,24 @@ export class UsersService {
     return user;
   }
 
+  async getOrCreateByTelegram(
+    telegramId: number,
+    firstName: string,
+    lastName?: string,
+    username?: string,
+    timezone?: string,
+  ): Promise<User> {
+    const existing = await this.findUserByTelegramId(telegramId);
+    if (existing) return existing;
+    return this.createUser(
+      telegramId,
+      firstName,
+      lastName,
+      username,
+      timezone,
+    );
+  }
+
   async updateUser(id: string, data: UpdateUserData): Promise<User> {
     const user = await this.prisma.user.findUnique({
       where: { id },

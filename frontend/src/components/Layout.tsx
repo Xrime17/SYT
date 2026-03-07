@@ -45,9 +45,9 @@ function NavLink({
 
 export function Layout({ children }: { children: React.ReactNode }) {
   useTelegramTheme();
-  const { user, logout } = useUser();
+  const { user, logout, isInTelegram } = useUser();
   const pathname = usePathname();
-  const isTelegram = typeof window !== 'undefined' && !!window.Telegram?.WebApp;
+  const isTelegram = isInTelegram || (typeof window !== 'undefined' && !!window.Telegram?.WebApp);
 
   const today = new Date();
   const dateStr = today.toLocaleDateString('ru-RU', {

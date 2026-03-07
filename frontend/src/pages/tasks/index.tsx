@@ -7,31 +7,40 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { TaskItem } from '@/components/TaskItem';
 import { useUser } from '@/context/UserContext';
-import { useTelegramUser } from '@/hooks/useTelegramUser';
 import { getTasks, updateTask, deleteTask, type Task } from '@/api/tasks';
 
 const BOT_LINK = process.env.NEXT_PUBLIC_TELEGRAM_BOT_LINK ?? 'https://t.me/save_you_time_bot';
 
 export default function TasksPage() {
-  const { user } = useUser();
-  const { isInTelegram, loading: telegramLoading, error: telegramError } = useTelegramUser();
+  const { user, isInTelegram, telegramLoading, telegramError } = useUser();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user?.id) {
-      setLoading(false);
+      queueMicrotask(() => setLoading(false));
       return;
     }
-    setError(null);
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) setError(null);
+    });
     getTasks(user.id)
-      .then(setTasks)
+      .then((data) => {
+        if (!cancelled) setTasks(data);
+      })
       .catch((e) => {
+        if (cancelled) return;
         const msg = e instanceof Error ? e.message : 'Не удалось загрузить задачи';
         setError(msg === 'Failed to fetch' ? 'Не удалось загрузить задачи. Проверьте подключение.' : msg);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [user?.id]);
 
   const handleToggle = async (task: Task) => {

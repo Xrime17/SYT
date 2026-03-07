@@ -7,22 +7,26 @@ import { TelegramUserLoader } from '@/components/TelegramUserLoader';
 function ApiPreconnect() {
   const url = process.env.NEXT_PUBLIC_API_URL;
   if (!url || url.startsWith('http://localhost')) return null;
+  let origin: string;
   try {
-    const origin = new URL(url).origin;
-    return (
-      <Head>
-        <link rel="preconnect" href={origin} />
-        <link rel="dns-prefetch" href={origin} />
-      </Head>
-    );
+    origin = new URL(url).origin;
   } catch {
     return null;
   }
+  return (
+    <Head>
+      <link rel="preconnect" href={origin} />
+      <link rel="dns-prefetch" href={origin} />
+    </Head>
+  );
 }
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
     <UserProvider>
+      <Head>
+        <title>Syt — Трекер задач</title>
+      </Head>
       <ApiPreconnect />
       <TelegramUserLoader />
       <Component {...pageProps} />

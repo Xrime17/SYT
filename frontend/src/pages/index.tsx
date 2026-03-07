@@ -1,15 +1,20 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/router';
+import { useEffect } from 'react';
 import { useUser } from '@/context/UserContext';
-import { useTelegramUser } from '@/hooks/useTelegramUser';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 
 export default function Home() {
-  const { user } = useUser();
-  const { loading, error, isInTelegram } = useTelegramUser();
+  const router = useRouter();
+  const { user, telegramLoading, telegramError, isInTelegram } = useUser();
+
+  useEffect(() => {
+    if (isInTelegram && user) router.prefetch('/tasks');
+  }, [isInTelegram, user, router]);
 
   return (
     <Layout>
@@ -40,7 +45,7 @@ export default function Home() {
         </Card>
       )}
 
-      {isInTelegram && loading && !user && (
+      {isInTelegram && telegramLoading && !user && (
         <Card className="p-8 text-center max-w-md bg-white shadow-lg">
           <div className="inline-block w-10 h-10 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4" aria-hidden />
           <p className="text-slate-700 font-medium">Загрузка…</p>
@@ -48,11 +53,11 @@ export default function Home() {
         </Card>
       )}
 
-      {isInTelegram && error && (
-        <p className="text-red-500 mb-4">{error}</p>
+      {isInTelegram && telegramError && (
+        <p className="text-red-500 mb-4">{telegramError}</p>
       )}
 
-      {isInTelegram && !loading && user && (
+      {isInTelegram && !telegramLoading && user && (
         <Card className="p-6 mb-6">
           <p className="text-slate-600 mb-4">
             Привет, <strong>{user.firstName}</strong>! Управляйте задачами, повторениями и напоминаниями.

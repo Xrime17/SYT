@@ -2,19 +2,18 @@
 
 import { useEffect } from 'react';
 import { useUser } from '@/context/UserContext';
-import { getUserByTelegramId } from '@/api/users';
-import { createUser } from '@/api/users';
+import { getOrCreateUserByTelegram } from '@/api/users';
 
 /**
- * In Telegram Mini App: load script if needed, then get/create user from API and set in context.
+ * In Telegram Mini App: load script if needed, then get-or-create user (1 API call) and set in context.
+ * Called only from TelegramUserLoader — no duplicate requests.
  */
 export function useTelegramUser() {
   const {
     setUser,
     setTelegramLoading,
     setTelegramError,
-    telegramLoading,
-    telegramError,
+    setTelegramInContext,
   } = useUser();
 
   useEffect(() => {
@@ -54,10 +53,12 @@ export function useTelegramUser() {
       const tgUser = tg?.initDataUnsafe?.user;
 
       if (!tgUser) {
+        setTelegramInContext(false);
         setTelegramLoading(false);
         return;
       }
 
+      setTelegramInContext(true);
       tg?.ready();
       tg?.expand();
 
@@ -67,26 +68,17 @@ export function useTelegramUser() {
       const username = tgUser.username ?? undefined;
 
       setTelegramError(null);
-      (async () => {
-        try {
-          try {
-            const u = await getUserByTelegramId(String(telegramId));
-            setUser(u);
-          } catch {
-            const u = await createUser({
-              telegramId,
-              firstName,
-              lastName,
-              username,
-            });
-            setUser(u);
-          }
-        } catch (e) {
+      getOrCreateUserByTelegram({
+        telegramId,
+        firstName,
+        lastName,
+        username,
+      })
+        .then(setUser)
+        .catch((e) => {
           setTelegramError(e instanceof Error ? e.message : 'Ошибка входа');
-        } finally {
-          setTelegramLoading(false);
-        }
-      })();
+        })
+        .finally(() => setTelegramLoading(false));
     };
 
     if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
@@ -94,6 +86,7 @@ export function useTelegramUser() {
       return;
     }
     if (!mightBeTelegram()) {
+      setTelegramInContext(false);
       setTelegramLoading(false);
       return;
     }
@@ -104,15 +97,5 @@ export function useTelegramUser() {
     return () => {
       cancelled = true;
     };
-  }, [setUser, setTelegramLoading, setTelegramError]);
-
-  const isInTelegram =
-    typeof window !== 'undefined' &&
-    !!window.Telegram?.WebApp?.initDataUnsafe?.user;
-
-  return {
-    loading: telegramLoading,
-    error: telegramError,
-    isInTelegram,
-  };
+  }, [setUser, setTelegramLoading, setTelegramError, setTelegramInContext]);
 }

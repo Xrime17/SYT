@@ -20,6 +20,19 @@ export async function getUserByTelegramId(telegramId: string): Promise<User> {
   return request<User>(`/users/telegram/${telegramId}`);
 }
 
+export async function getOrCreateUserByTelegram(data: {
+  telegramId: number;
+  firstName: string;
+  lastName?: string;
+  username?: string;
+  timezone?: string;
+}): Promise<User> {
+  return request<User>('/users/telegram/get-or-create', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
 export async function createUser(data: {
   telegramId: number;
   firstName: string;
