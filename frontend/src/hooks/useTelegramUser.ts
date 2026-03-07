@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useUser } from '@/context/UserContext';
 import { getOrCreateUserByTelegram } from '@/api/users';
 
@@ -15,6 +15,7 @@ export function useTelegramUser() {
     setTelegramError,
     setTelegramInContext,
   } = useUser();
+  const loadTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -68,6 +69,10 @@ export function useTelegramUser() {
       const username = tgUser.username ?? undefined;
 
       setTelegramError(null);
+      loadTimeoutRef.current = setTimeout(() => {
+        setTelegramError('Сервер не отвечает. Проверьте интернет и обновите страницу.');
+        setTelegramLoading(false);
+      }, 30000);
       getOrCreateUserByTelegram({
         telegramId,
         firstName,
@@ -78,12 +83,23 @@ export function useTelegramUser() {
         .catch((e) => {
           setTelegramError(e instanceof Error ? e.message : 'Ошибка входа');
         })
-        .finally(() => setTelegramLoading(false));
+        .finally(() => {
+          if (loadTimeoutRef.current) {
+            clearTimeout(loadTimeoutRef.current);
+            loadTimeoutRef.current = null;
+          }
+          setTelegramLoading(false);
+        });
     };
 
     if (window.Telegram?.WebApp?.initDataUnsafe?.user) {
       run();
-      return;
+      return () => {
+        if (loadTimeoutRef.current) {
+          clearTimeout(loadTimeoutRef.current);
+          loadTimeoutRef.current = null;
+        }
+      };
     }
     if (!mightBeTelegram()) {
       setTelegramInContext(false);
@@ -96,6 +112,10 @@ export function useTelegramUser() {
     });
     return () => {
       cancelled = true;
+      if (loadTimeoutRef.current) {
+        clearTimeout(loadTimeoutRef.current);
+        loadTimeoutRef.current = null;
+      }
     };
   }, [setUser, setTelegramLoading, setTelegramError, setTelegramInContext]);
 }

@@ -54,7 +54,13 @@ export default function Home() {
       )}
 
       {isInTelegram && telegramError && (
-        <p className="text-red-500 mb-4">{telegramError}</p>
+        <Card className="p-6 max-w-md border-amber-200 bg-amber-50/80">
+          <p className="text-amber-800 font-medium mb-1">Не удалось подключиться</p>
+          <p className="text-amber-700/90 text-sm mb-4">{telegramError}</p>
+          <Button variant="secondary" className="w-full rounded-2xl" onClick={() => window.location.reload()}>
+            Обновить страницу
+          </Button>
+        </Card>
       )}
 
       {isInTelegram && !telegramLoading && user && (
