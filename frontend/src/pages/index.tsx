@@ -16,11 +16,13 @@ export default function Home() {
       <div className="mb-2 text-slate-500 text-sm">
         {new Date().toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' })}
       </div>
-      <h1 className="text-2xl font-bold text-slate-900 mb-6">Трекер задач</h1>
+      <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-800 to-slate-700 bg-clip-text text-transparent mb-6">
+        Трекер задач
+      </h1>
 
       {!isInTelegram && (
         <Card className="mb-6 p-8 text-center max-w-md">
-          <div className="w-14 h-14 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-2xl mx-auto mb-4">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-400 to-indigo-600 text-white flex items-center justify-center text-2xl mx-auto mb-4 shadow-lg shadow-indigo-500/25">
             ✨
           </div>
           <h2 className="text-lg font-semibold text-slate-800 mb-2">Откройте в Telegram</h2>
@@ -56,6 +58,9 @@ export default function Home() {
           </Link>
         </Card>
       )}
+    <Link href="/tracker" className="block mt-4 text-center text-sm text-slate-500 hover:text-slate-700">
+          Экран в стиле трекера с градиентом →
+        </Link>
     </Layout>
   );
 }

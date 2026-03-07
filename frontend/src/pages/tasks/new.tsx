@@ -35,12 +35,17 @@ export default function NewTaskPage() {
   return (
     <Layout>
       <div className="mb-6 flex items-center gap-3">
-        <Link href="/tasks" className="p-2 rounded-xl text-slate-500 hover:bg-slate-100">
+        <Link
+          href="/tasks"
+          className="p-2 rounded-xl text-slate-500 hover:bg-white/80 hover:text-slate-700 transition-all duration-200"
+        >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </Link>
-        <h1 className="text-xl font-semibold text-slate-900">Новая задача</h1>
+        <h1 className="text-xl font-semibold bg-gradient-to-r from-slate-800 to-slate-700 bg-clip-text text-transparent">
+          Новая задача
+        </h1>
       </div>
 
       {!user ? (

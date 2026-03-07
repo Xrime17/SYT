@@ -5,3 +5,7 @@ npm-debug.log*
 pnpm-lock.yaml
 yarn.lock
 
+.vercel
+.env*.local
+.cursor/
+.figma-mcp/

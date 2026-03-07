@@ -17,10 +17,10 @@ function NavLink({
   return (
     <Link
       href={href}
-      className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+      className={`rounded-full px-4 py-2 text-sm font-medium transition-all duration-200 ${
         active
-          ? 'bg-indigo-100 text-indigo-700'
-          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+          ? 'bg-gradient-to-r from-indigo-500 to-indigo-400 text-white shadow-md shadow-indigo-500/25'
+          : 'text-slate-600 hover:bg-white/60 hover:text-slate-900'
       }`}
       aria-current={active ? 'page' : undefined}
     >
@@ -42,14 +42,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
   });
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
+    <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-slate-200/80 shadow-sm">
+      <header className="sticky top-0 z-20 bg-white/70 backdrop-blur-xl border-b border-white/50 shadow-sm shadow-slate-200/30">
         <div className="mx-auto flex h-14 max-w-2xl items-center justify-between gap-3 px-4">
           <div className="flex items-center gap-3 min-w-0">
             <Link
               href="/"
-              className="font-bold text-lg text-slate-900 truncate shrink-0"
+              className="font-bold text-lg bg-gradient-to-r from-indigo-600 to-indigo-500 bg-clip-text text-transparent truncate shrink-0"
             >
               Syt
             </Link>
@@ -71,7 +71,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-2 shrink-0">
             {user && (
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-semibold text-sm">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center text-white font-semibold text-sm shadow-md shadow-indigo-500/25">
                   {user.firstName?.charAt(0) || '?'}
                 </div>
                 <span className="text-sm text-slate-600 hidden md:inline max-w-[100px] truncate">
@@ -83,7 +83,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <button
                 type="button"
                 onClick={() => window.Telegram?.WebApp?.close()}
-                className="rounded-full p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                className="rounded-full p-2 text-slate-500 hover:bg-white/80 hover:text-slate-700 transition-all duration-200"
                 title="Закрыть"
                 aria-label="Закрыть"
               >
@@ -108,16 +108,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Main */}
       <main className="flex-1 mx-auto w-full max-w-2xl px-4 py-6 pb-24 sm:pb-8">
-        {children}
+        <div className="animate-in">
+          {children}
+        </div>
       </main>
 
       {/* Bottom nav (mobile) */}
-      <nav className="fixed bottom-0 left-0 right-0 z-20 sm:hidden bg-white border-t border-slate-200 safe-area-pb">
+      <nav className="fixed bottom-0 left-0 right-0 z-20 sm:hidden bg-white/70 backdrop-blur-xl border-t border-white/50 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.06)] safe-area-pb">
         <div className="flex justify-around items-center h-14 max-w-2xl mx-auto">
           <Link
             href="/tasks"
-            className={`flex flex-col items-center justify-center flex-1 py-2 text-xs ${
-              pathname === '/tasks' ? 'text-indigo-600' : 'text-slate-500'
+            className={`flex flex-col items-center justify-center flex-1 py-2 text-xs transition-all duration-200 rounded-lg mx-1 ${
+              pathname === '/tasks' ? 'text-indigo-600 font-medium' : 'text-slate-500 hover:text-slate-700'
             }`}
             aria-current={pathname === '/tasks' ? 'page' : undefined}
           >
@@ -128,8 +130,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </Link>
           <Link
             href="/recurring"
-            className={`flex flex-col items-center justify-center flex-1 py-2 text-xs ${
-              pathname === '/recurring' ? 'text-indigo-600' : 'text-slate-500'
+            className={`flex flex-col items-center justify-center flex-1 py-2 text-xs transition-all duration-200 rounded-lg mx-1 ${
+              pathname === '/recurring' ? 'text-indigo-600 font-medium' : 'text-slate-500 hover:text-slate-700'
             }`}
             aria-current={pathname === '/recurring' ? 'page' : undefined}
           >
@@ -140,8 +142,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
           </Link>
           <Link
             href="/reminders"
-            className={`flex flex-col items-center justify-center flex-1 py-2 text-xs ${
-              pathname === '/reminders' ? 'text-indigo-600' : 'text-slate-500'
+            className={`flex flex-col items-center justify-center flex-1 py-2 text-xs transition-all duration-200 rounded-lg mx-1 ${
+              pathname === '/reminders' ? 'text-indigo-600 font-medium' : 'text-slate-500 hover:text-slate-700'
             }`}
             aria-current={pathname === '/reminders' ? 'page' : undefined}
           >

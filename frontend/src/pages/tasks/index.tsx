@@ -64,7 +64,9 @@ export default function TasksPage() {
   return (
     <Layout>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold text-slate-900">Задачи</h1>
+        <h1 className="text-xl font-semibold bg-gradient-to-r from-slate-800 to-slate-700 bg-clip-text text-transparent">
+          Задачи
+        </h1>
         {user && tasks.length > 0 && (
           <span className="text-sm text-slate-500">
             {completed}/{tasks.length}
@@ -74,7 +76,7 @@ export default function TasksPage() {
 
       {!isInTelegram && !user && (
         <Card className="p-8 text-center max-w-md mx-auto">
-          <div className="w-14 h-14 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-2xl mx-auto mb-4">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-400 to-indigo-600 text-white flex items-center justify-center text-2xl mx-auto mb-4 shadow-lg shadow-indigo-500/25">
             ✨
           </div>
           <h2 className="text-lg font-semibold text-slate-800 mb-2">Откройте в Telegram</h2>

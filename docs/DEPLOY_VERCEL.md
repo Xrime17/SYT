@@ -51,6 +51,21 @@ WEB_APP_URL=https://syt-xxx.vercel.app
 
 ---
 
+## Туннели из России: что попробовать
+
+Туннели вроде localhost.run / lhr.life часто «отваливаются» (502, no tunnel here). Ниже варианты с HTTPS, которые обычно доступны из РФ.
+
+| Способ | HTTPS | Регистрация | Постоянный URL | Что делать при обрыве |
+|--------|-------|-------------|-----------------|------------------------|
+| **cloudflared** (quick tunnel) | да | нет | нет, новый при каждом запуске | Перезапустить, обновить `NEXT_PUBLIC_API_URL` в Vercel, Redeploy |
+| **ngrok** | да | да (бесплатный аккаунт) | нет на free | Часто блокируют с части IP в РФ (9040) — пробовать или VPN |
+| **localhost.run** (SSH) | да | нет | нет | Нестабильно из РФ, часто обрывы |
+| **Задеплоить бэкенд** (Railway/Render) | да | да | **да** | Не нужен туннель — самый стабильный вариант |
+
+**Рекомендация:** если туннели постоянно падают — задеплой бэкенд в облако (см. раздел «Бэкенд для продакшена» ниже). Тогда у тебя постоянный HTTPS-URL API, без зависимости от туннеля с твоего ПК.
+
+---
+
 ## Туннель Cloudflare (cloudflared) — альтернатива ngrok
 
 Бесплатно, без регистрации. Подходит, если ngrok недоступен с твоего IP (ошибка 9040) или не хочешь заводить аккаунт.
@@ -221,15 +236,50 @@ WEB_APP_URL=https://syt-xxx.vercel.app
 
 Перезапусти бэкенд. В Telegram у бота появится кнопка **Open**, открывающая этот URL.
 
-## 4. Бэкенд для продакшена
+## 4. Бэкенд для продакшена (без туннеля — стабильно из России)
 
-Фронт на Vercel ходит на API по `NEXT_PUBLIC_API_URL`. Нужен доступный по HTTPS бэкенд:
+Фронт на Vercel ходит на API по `NEXT_PUBLIC_API_URL`. Если туннели постоянно отваливаются, задеплой бэкенд в облако — получишь **постоянный HTTPS-URL**, без зависимости от ПК.
 
-- **Railway** — [railway.app](https://railway.app), залить папку с NestJS, добавить PostgreSQL.
-- **Render** — [render.com](https://render.com), Web Service + PostgreSQL.
-- **Fly.io** — деплой через Docker.
+### Вариант A: Railway (удобно для NestJS + PostgreSQL)
 
-На бэкенде включи CORS для домена фронта (у тебя в коде уже `origin: true` — разрешены все; для прода лучше указать `https://твой-фронт.vercel.app`).
+1. Зайди на [railway.app](https://railway.app), войди через GitHub.
+2. **New Project** → **Deploy from GitHub repo** → выбери репозиторий **SYT**.
+3. В настройках проекта укажи **Root Directory**: корень репо (не `frontend` — деплоим бэкенд). **Start Command:** `npm run start:prod` (или `npx prisma migrate deploy && node dist/main.js` если миграции нужны при старте). **Build Command:** `npm install && npx prisma generate && npm run build`.
+4. Добавь сервис **PostgreSQL** в тот же проект (Railway создаст БД и подставит `DATABASE_URL`).
+5. В **Variables** задай: `TELEGRAM_BOT_TOKEN`, `WEB_APP_URL=https://syt-two.vercel.app` (твой фронт на Vercel).
+6. В **Settings** включи **Public Networking** и скопируй сгенерированный домен (например `https://syt-production-xxxx.up.railway.app`).
+7. В Vercel в **Environment Variables** задай `NEXT_PUBLIC_API_URL` = этот URL → **Redeploy**.
+
+Дальше бот и фронт работают без туннеля; бэкенд всегда доступен по одному и тому же адресу.
+
+### Вариант B: Koyeb (часто доступен из РФ)
+
+[Koyeb](https://www.koyeb.com) поддерживает NestJS и Docker, есть бесплатный тир. Регистрация через GitHub/Google.
+
+1. Зайди на [app.koyeb.com](https://app.koyeb.com) → **Create Web Service**. Выбери **GitHub** как источник; при первом разе установи Koyeb GitHub App и дай доступ к репо **SYT** (или твоему).
+2. **Source:** репозиторий **SYT**, ветка **main**. **Builder** — **Dockerfile** (путь в корне репо).
+3. **Ports:** в секции Exposed ports укажи **3000** с типом **http** (или `3000:http`). **Routes:** `/:3000`.
+4. **Environment variables** (обязательно):
+   - `PORT` = `3000`
+   - `DATABASE_URL` — строка подключения к PostgreSQL (см. ниже).
+   - `TELEGRAM_BOT_TOKEN` — токен бота.
+   - `WEB_APP_URL` — URL фронта на Vercel, например `https://syt-two.vercel.app`.
+5. **PostgreSQL:** в Koyeb в том же проекте создай **Database** (Add Service → Database → PostgreSQL) — скопируй выданный `DATABASE_URL` в переменные сервиса. Либо используй внешнюю БД (Neon, Supabase и т.д.) и подставь её URL в `DATABASE_URL`.
+6. **Instance type:** бесплатный (если доступен). **Region:** например Frankfurt.
+7. Запусти деплой. После сборки Koyeb выдаст публичный URL (например `https://xxx.koyeb.app`). В **Vercel** в Environment Variables задай `NEXT_PUBLIC_API_URL` = этот URL → Redeploy.
+
+Проверка API: открой `https://твой-сервис.koyeb.app/health` — должен быть `{"status":"ok",...}`. В Dockerfile при старте выполняются `prisma migrate deploy` и затем запуск приложения.
+
+### Вариант C: Render / Fly.io
+
+- **Render** — [render.com](https://render.com): Web Service из GitHub (NestJS), отдельно PostgreSQL. Укажи build/start команды и переменные окружения, получишь `https://xxx.onrender.com`.
+- **Fly.io** — деплой через Dockerfile; подходит, если уже есть образ.
+
+На бэкенде CORS уже разрешён (`origin: true` в коде); для прода при желании можно ограничить `origin` доменом фронта на Vercel.
+
+### Hugging Face Docker Spaces
+
+**Подходит ли для бэкенда и бота?** Технически да — можно поднять API в Docker Space. Но на бесплатном тире Space **засыпает после 48 часов без активности**: первый запрос после сна будет долгим (cold start), а Telegram-бот должен быть всегда на связи. Для 24/7 нужен платный апгрейд железа. Итог: для демо или редкого использования можно попробовать; для стабильного бота лучше Koyeb или другой облачный деплой.
 
 ## Деплой через Vercel CLI (без GitHub)
 
