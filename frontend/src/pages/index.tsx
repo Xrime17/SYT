@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect } from 'react';
 import { useUser } from '@/context/UserContext';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/Button';
@@ -12,35 +11,8 @@ const BOT_LINK = process.env.NEXT_PUBLIC_TELEGRAM_BOT_LINK ?? 'https://t.me/save
 export default function Home() {
   const { user, telegramLoading, telegramError, isInTelegram } = useUser();
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const looksLikeTelegram = () => {
-      const params = new URLSearchParams(window.location.search);
-      return (
-        isInTelegram ||
-        params.has('tgWebAppData') ||
-        params.has('tgWebAppVersion') ||
-        !!window.Telegram?.WebApp?.initDataUnsafe?.user ||
-        !!window.Telegram?.WebApp ||
-        (document.referrer ? /t\.me|telegram\.(me|org)/i.test(document.referrer) : false) ||
-        window.self !== window.top
-      );
-    };
-
-    // В iframe (Mini App) никогда не редиректим — иначе при открытии по кнопке «ОТКРЫТЬ» уходим в чат с ботом.
-    if (window.self !== window.top) return;
-
-    if (looksLikeTelegram()) return;
-
-    // Даём время загрузиться скрипту Telegram и выставить isInTelegram, затем редирект только если точно не в ТГ.
-    const t = setTimeout(() => {
-      if (looksLikeTelegram()) return;
-      window.location.replace(BOT_LINK);
-    }, 2500);
-
-    return () => clearTimeout(t);
-  }, [isInTelegram]);
+  // Редирект отключён: при открытии по кнопке «ОТКРЫТЬ» (из списка чатов или из чата с ботом) остаёмся в трекере.
+  // В обычном браузере показываем карточку с кнопкой «Открыть бота» — без автоматического перенаправления.
 
   return (
     <Layout>
@@ -53,7 +25,7 @@ export default function Home() {
 
       {!isInTelegram && (
         <Card className="p-6 max-w-md text-center">
-          <p className="text-slate-600 text-sm">Перенаправляем в Telegram…</p>
+          <p className="text-slate-600 text-sm">Откройте приложение в Telegram (бот → кнопка «Open»).</p>
           <a href={BOT_LINK} target="_blank" rel="noopener noreferrer" className="inline-block mt-4">
             <Button className="rounded-2xl px-6">Открыть бота</Button>
           </a>
