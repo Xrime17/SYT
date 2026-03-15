@@ -73,6 +73,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </span>
           </div>
           <nav className="hidden sm:flex items-center gap-1">
+            <NavLink href="/tracker" active={pathname === '/tracker'}>
+              Трекер
+            </NavLink>
             <NavLink href="/tasks" active={pathname === '/tasks'}>
               Задачи
             </NavLink>
@@ -132,6 +135,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <nav className="fixed bottom-0 left-0 right-0 z-20 sm:hidden bg-white/70 backdrop-blur-xl border-t border-white/50 shadow-[0_-4px_20px_-4px_rgba(0,0,0,0.06)] safe-area-pb">
         <div className="flex justify-around items-center h-14 max-w-2xl mx-auto">
           <Link
+            href="/tracker"
+            className={`flex flex-col items-center justify-center flex-1 py-2 text-xs transition-all duration-200 rounded-lg mx-1 ${
+              pathname === '/tracker' ? 'text-indigo-600 font-medium' : 'text-slate-500 hover:text-slate-700'
+            }`}
+            aria-current={pathname === '/tracker' ? 'page' : undefined}
+          >
+            <svg className="w-6 h-6 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            Трекер
+          </Link>
+          <Link
             href="/tasks"
             className={`flex flex-col items-center justify-center flex-1 py-2 text-xs transition-all duration-200 rounded-lg mx-1 ${
               pathname === '/tasks' ? 'text-indigo-600 font-medium' : 'text-slate-500 hover:text-slate-700'
@@ -139,7 +154,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             aria-current={pathname === '/tasks' ? 'page' : undefined}
           >
             <svg className="w-6 h-6 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
             </svg>
             Задачи
           </Link>

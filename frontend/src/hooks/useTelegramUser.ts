@@ -22,6 +22,8 @@ export function useTelegramUser() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const CACHE_KEY = 'syt:telegram-user-cache';
+    /** Кэш пользователя считаем свежим только 5 минут — затем при открытии запрашиваем заново (очистка при старте). */
+    const USER_CACHE_MAX_AGE_MS = 5 * 60 * 1000;
 
     const readCachedUser = (telegramId: number): User | null => {
       try {
@@ -33,6 +35,8 @@ export function useTelegramUser() {
           cachedAt: number;
         };
         if (!parsed || parsed.telegramId !== telegramId || !parsed.user) return null;
+        const age = Date.now() - (parsed.cachedAt ?? 0);
+        if (age > USER_CACHE_MAX_AGE_MS) return null;
         return parsed.user;
       } catch {
         return null;

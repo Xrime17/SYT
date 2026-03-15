@@ -99,22 +99,28 @@ export class TelegramService implements OnModuleInit {
     }
   }
 
+  private readonly menuButtonText = 'ОТКРЫТЬ';
+
+  private getMenuButton(webAppUrl: string): { type: 'web_app'; text: string; web_app: { url: string } } {
+    return {
+      type: 'web_app',
+      text: this.menuButtonText,
+      web_app: { url: webAppUrl },
+    };
+  }
+
   private async setMenuButton(): Promise<void> {
     if (!this.bot) return;
     const webAppUrl = this.configService.get<string>('WEB_APP_URL');
     if (!webAppUrl) {
-      this.logger.warn('WEB_APP_URL not set; menu button not configured');
+      this.logger.warn('WEB_APP_URL not set; menu button not configured. Set WEB_APP_URL so "ОТКРЫТЬ" appears in chat list.');
       return;
     }
     try {
       await this.bot.telegram.setChatMenuButton({
-        menuButton: {
-          type: 'web_app',
-          text: 'Open',
-          web_app: { url: webAppUrl },
-        },
+        menuButton: this.getMenuButton(webAppUrl),
       });
-      this.logger.log(`Menu button "Open" set → ${webAppUrl}`);
+      this.logger.log(`Menu button "${this.menuButtonText}" set → ${webAppUrl}`);
     } catch (err) {
       this.logger.warn(
         'Failed to set menu button: ' + (err instanceof Error ? err.message : String(err)),
@@ -145,9 +151,23 @@ export class TelegramService implements OnModuleInit {
 
     const webAppUrl = this.configService.get<string>('WEB_APP_URL');
     const openAppMarkup =
-      webAppUrl ?
-        Markup.inlineKeyboard([[Markup.button.webApp('Open', webAppUrl)]])
-      : undefined;
+      webAppUrl
+        ? Markup.inlineKeyboard([[Markup.button.webApp(this.menuButtonText, webAppUrl)]])
+        : undefined;
+
+    // Устанавливаем кнопку «ОТКРЫТЬ» в чате и в списке чатов для этого пользователя
+    if (webAppUrl && ctx.chat?.id) {
+      try {
+        await ctx.telegram.setChatMenuButton({
+          chatId: ctx.chat.id,
+          menuButton: this.getMenuButton(webAppUrl),
+        });
+      } catch (err) {
+        this.logger.warn(
+          'Failed to set chat menu button: ' + (err instanceof Error ? err.message : String(err)),
+        );
+      }
+    }
 
     try {
       const existing = await this.usersService.findUserByTelegramId(telegramId);

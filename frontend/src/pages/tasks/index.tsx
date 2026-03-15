@@ -20,10 +20,16 @@ export default function TasksPage() {
   const { user, isInTelegram, telegramLoading, telegramError } = useUser();
   const [mutateError, setMutateError] = useState<string | null>(null);
 
+  // Stale-while-revalidate: показываем кэш сразу, в фоне обновляем; при возврате в приложение — revalidate
   const { data: tasks = [], error: fetchError, isLoading, mutate } = useSWR(
     user?.id ? ['tasks', user.id] : null,
     ([, userId]) => getTasks(userId),
-    { revalidateOnFocus: false }
+    {
+      revalidateOnFocus: true,
+      focusThrottleInterval: 60 * 1000,
+      dedupingInterval: 2000,
+      revalidateIfStale: true,
+    }
   );
 
   const handleToggle = useCallback(
