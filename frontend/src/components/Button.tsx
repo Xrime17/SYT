@@ -1,31 +1,60 @@
-import React from 'react';
+'use client';
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
+import React from 'react';
+import { Spinner } from './Spinner';
+
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
+
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: ButtonVariant;
+  loading?: boolean;
   children: React.ReactNode;
 }
 
+const variantStyles: Record<ButtonVariant, string> = {
+  primary:
+    'bg-[var(--syt-accent)] text-white shadow-[0_0_20px_var(--syt-accent-glow)]/30 hover:opacity-90 hover:shadow-[0_0_24px_var(--syt-accent-glow)]/40 active:opacity-95 disabled:opacity-50 disabled:shadow-none border border-transparent',
+  secondary:
+    'bg-[var(--syt-surface)] text-[var(--syt-text)] border border-[var(--syt-border)] hover:bg-[var(--syt-card)] active:opacity-90 disabled:opacity-50',
+  ghost:
+    'bg-transparent text-[var(--syt-text-secondary)] border border-transparent hover:bg-[var(--syt-glass-bg)] hover:text-[var(--syt-text)] active:opacity-90 disabled:opacity-50',
+  danger:
+    'bg-[var(--syt-error)] text-white border border-transparent hover:opacity-90 active:opacity-95 disabled:opacity-50',
+};
+
 export function Button({
   variant = 'primary',
+  loading = false,
+  disabled,
+  type = 'button',
   className = '',
   children,
   ...props
 }: ButtonProps) {
-  const base =
-    'inline-flex items-center justify-center rounded-xl font-medium transition-all duration-200 disabled:opacity-50 px-4 py-2.5 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500 active:scale-[0.98]';
-  const variants = {
-    primary:
-      'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30 hover:from-indigo-500 hover:to-indigo-400',
-    secondary:
-      'bg-white/80 backdrop-blur-sm text-slate-700 border border-slate-200/80 shadow-sm hover:bg-white hover:border-slate-300 hover:shadow',
-    danger:
-      'bg-gradient-to-r from-red-500 to-red-400 text-white shadow-lg shadow-red-500/20 hover:shadow-red-500/30 hover:from-red-600 hover:to-red-500',
-    ghost:
-      'text-slate-600 hover:bg-white/60 hover:text-slate-900 border border-transparent hover:border-slate-200/80',
-  };
+  const isDisabled = disabled || loading;
+
   return (
-    <button className={`${base} ${variants[variant]} ${className}`} {...props}>
-      {children}
+    <button
+      type={type}
+      disabled={isDisabled}
+      className={`
+        inline-flex items-center justify-center gap-2 rounded-[var(--syt-radius-button)]
+        px-5 py-2.5 text-sm font-medium transition-all duration-200
+        focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--syt-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--syt-background)]
+        active:scale-[0.98]
+        ${variantStyles[variant]}
+        ${className}
+      `}
+      {...props}
+    >
+      {loading ? (
+        <>
+          <Spinner className="w-4 h-4" />
+          <span>{children}</span>
+        </>
+      ) : (
+        children
+      )}
     </button>
   );
 }

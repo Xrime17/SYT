@@ -9,6 +9,15 @@ export interface RecurringRule {
   endDate?: string | null;
 }
 
+export interface RecurringRuleForUser extends RecurringRule {
+  taskTitle: string;
+  frequencyLabel: string;
+}
+
+export async function getRecurringRulesForUser(userId: string): Promise<RecurringRuleForUser[]> {
+  return request<RecurringRuleForUser[]>(`/recurring/user/${userId}`);
+}
+
 export async function getRecurringByTask(taskId: string): Promise<RecurringRule> {
   return request<RecurringRule>(`/recurring/${taskId}`);
 }

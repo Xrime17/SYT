@@ -26,11 +26,12 @@ export class RemindersService {
     });
   }
 
-  async getRemindersForUser(userId: string): Promise<Reminder[]> {
+  async getRemindersForUser(userId: string): Promise<(Reminder & { task: { title: string } })[]> {
     return this.prisma.reminder.findMany({
       where: { task: { userId } },
+      include: { task: { select: { title: true } } },
       orderBy: { remindAt: 'asc' },
-    });
+    }) as Promise<(Reminder & { task: { title: string } })[]>;
   }
 
   async markAsSent(reminderId: string): Promise<Reminder> {

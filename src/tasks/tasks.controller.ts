@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
@@ -23,6 +24,11 @@ export class TasksController {
       dto.userId,
       dto.title,
       dto.description,
+      {
+        type: dto.type,
+        priority: dto.priority,
+        dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
+      },
     );
   }
 
@@ -32,8 +38,11 @@ export class TasksController {
   }
 
   @Get(':userId')
-  getTasks(@Param('userId') userId: string) {
-    return this.tasksService.getTasks(userId);
+  getTasks(
+    @Param('userId') userId: string,
+    @Query('date') date?: string,
+  ) {
+    return this.tasksService.getTasks(userId, date);
   }
 
   @Patch(':taskId')

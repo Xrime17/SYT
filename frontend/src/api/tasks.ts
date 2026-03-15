@@ -15,8 +15,9 @@ export interface Task {
   generatedDate?: string | null;
 }
 
-export async function getTasks(userId: string): Promise<Task[]> {
-  return request<Task[]>(`/tasks/${userId}`);
+export async function getTasks(userId: string, date?: string): Promise<Task[]> {
+  const url = date ? `/tasks/${userId}?date=${encodeURIComponent(date)}` : `/tasks/${userId}`;
+  return request<Task[]>(url);
 }
 
 export async function getTaskById(taskId: string): Promise<Task> {
@@ -27,6 +28,9 @@ export async function createTask(data: {
   userId: string;
   title: string;
   description?: string;
+  type?: string;
+  priority?: string;
+  dueDate?: string | null;
 }): Promise<Task> {
   return request<Task>('/tasks', {
     method: 'POST',

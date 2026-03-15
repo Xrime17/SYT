@@ -5,6 +5,7 @@ export interface Reminder {
   taskId: string;
   remindAt: string;
   sent: boolean;
+  task?: { title: string };
 }
 
 export async function getRemindersForUser(userId: string): Promise<Reminder[]> {

@@ -48,9 +48,21 @@ export class TasksService {
     }
   }
 
-  async getTasks(userId: string): Promise<Task[]> {
+  async getTasks(userId: string, date?: string): Promise<Task[]> {
+    const where: Prisma.TaskWhereInput = { userId };
+    if (date) {
+      const [y, m, d] = date.split('-').map(Number);
+      if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+        const start = new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0));
+        const end = new Date(Date.UTC(y, m - 1, d, 23, 59, 59, 999));
+        where.OR = [
+          { dueDate: { gte: start, lte: end } },
+          { generatedDate: { gte: start, lte: end } },
+        ];
+      }
+    }
     return this.prisma.task.findMany({
-      where: { userId },
+      where,
       orderBy: { createdAt: 'desc' },
     });
   }

@@ -13,11 +13,12 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
+/** Default: dark. Later can switch to light when Telegram theme is light. */
 function getThemeFromTelegram(): Theme {
-  if (typeof window === 'undefined') return 'light';
+  if (typeof window === 'undefined') return 'dark';
   const scheme = window.Telegram?.WebApp?.colorScheme;
   if (scheme === 'light' || scheme === 'dark') return scheme;
-  return 'light';
+  return 'dark';
 }
 
 function getThemeParamsFromTelegram(): Record<string, string> | null {
@@ -91,7 +92,7 @@ export function useTheme(): ThemeContextValue {
   const ctx = useContext(ThemeContext);
   if (!ctx) {
     return {
-      theme: 'light',
+      theme: 'dark',
       themeParams: null,
     };
   }

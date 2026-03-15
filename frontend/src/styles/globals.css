@@ -3,63 +3,87 @@
 /* Тема из Telegram (светлая/тёмная): на <html> вешается class="dark" или data-theme="dark". */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* ——— Design system: Syt (dark theme) ——— */
 :root {
-  --background: #f8fafc;
-  --surface: #ffffff;
-  --foreground: #0f172a;
-  --muted: #64748b;
-  --accent: #6366f1;
-  --accent-hover: #4f46e5;
-  --accent-light: #818cf8;
-  --border: #e2e8f0;
-  --radius: 1rem;
-  /* Gradient background */
-  --gradient-from: #e0e7ff;
-  --gradient-via: #eef2ff;
-  --gradient-to: #f1f5f9;
-  --gradient-mesh: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(129, 140, 248, 0.2), transparent);
+  /* Colors – light (fallback) */
+  --syt-background: #f8fafc;
+  --syt-surface: #ffffff;
+  --syt-card: #ffffff;
+  --syt-border: #e2e8f0;
+  --syt-accent: #6366f1;
+  --syt-accent-glow: #818cf8;
+  --syt-success: #22c55e;
+  --syt-warning: #f59e0b;
+  --syt-error: #ef4444;
+  --syt-text: #0f172a;
+  --syt-text-secondary: #64748b;
+  --syt-text-muted: #94a3b8;
+  /* Spacing: 8px grid */
+  --syt-space-1: 8px;
+  --syt-space-2: 16px;
+  --syt-space-3: 24px;
+  --syt-space-4: 32px;
+  --syt-space-5: 40px;
+  --syt-space-6: 48px;
+  /* Radius */
+  --syt-radius-card: 14px;
+  --syt-radius-button: 12px;
+  --syt-radius-input: 10px;
+  /* Shadows */
+  --syt-shadow-soft: 0 10px 25px rgba(0, 0, 0, 0.12);
+  /* Glass */
+  --syt-glass-bg: rgba(255, 255, 255, 0.7);
+  --syt-glass-border: rgba(255, 255, 255, 0.5);
+  --syt-glass-blur: 12px;
+}
+
+.dark,
+[data-theme="dark"] {
+  --syt-background: #0f1117;
+  --syt-surface: #161b22;
+  --syt-card: #1c2128;
+  --syt-border: #2a2f37;
+  --syt-accent: #6366f1;
+  --syt-accent-glow: #818cf8;
+  --syt-success: #22c55e;
+  --syt-warning: #f59e0b;
+  --syt-error: #ef4444;
+  --syt-text: #f3f4f6;
+  --syt-text-secondary: #9ca3af;
+  --syt-text-muted: #6b7280;
+  --syt-shadow-soft: 0 10px 25px rgba(0, 0, 0, 0.35);
+  --syt-glass-bg: rgba(255, 255, 255, 0.05);
+  --syt-glass-border: rgba(255, 255, 255, 0.08);
+  --syt-glass-blur: 20px;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--syt-background);
+  --color-foreground: var(--syt-text);
 }
 
 body {
-  background: linear-gradient(165deg, var(--gradient-from) 0%, var(--gradient-via) 45%, var(--gradient-to) 100%);
-  background-attachment: fixed;
-  color: var(--foreground);
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  background: var(--syt-background);
+  color: var(--syt-text);
+  font-family: var(--syt-font, ui-sans-serif, system-ui, sans-serif);
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
 }
 
-/* Optional subtle mesh overlay for depth */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background: var(--gradient-mesh);
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* Content above the pseudo-element */
 #__next,
 main {
   position: relative;
   z-index: 1;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #f8fafc;
-    --surface: #ffffff;
-    --foreground: #0f172a;
-    --gradient-from: #e0e7ff;
-    --gradient-via: #eef2ff;
-    --gradient-to: #f1f5f9;
-  }
+/* Glass card (design system) */
+.syt-glass-card {
+  background: var(--syt-glass-bg);
+  backdrop-filter: blur(var(--syt-glass-blur));
+  -webkit-backdrop-filter: blur(var(--syt-glass-blur));
+  border: 1px solid var(--syt-glass-border);
+  border-radius: var(--syt-radius-card);
+  box-shadow: var(--syt-shadow-soft);
 }
 
 /* Page enter animation */

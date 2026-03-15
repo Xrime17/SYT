@@ -1,11 +1,14 @@
 import '@/styles/globals.css';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
+import { Inter } from 'next/font/google';
 import { SWRConfig } from 'swr';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { UserProvider } from '@/context/UserContext';
 import { TelegramUserLoader } from '@/components/TelegramUserLoader';
 import { CACHE_DISABLED } from '@/config';
+
+const inter = Inter({ subsets: ['latin', 'cyrillic'] });
 
 function ApiPreconnect() {
   const url = process.env.NEXT_PUBLIC_API_URL;
@@ -45,6 +48,7 @@ export default function App({ Component, pageProps }: AppProps) {
 
   return (
     <ThemeProvider>
+      <div className={inter.className}>
       <UserProvider>
         {CACHE_DISABLED ? (
           <SWRConfig value={{ provider: () => emptyCache }}>{content}</SWRConfig>
@@ -52,6 +56,7 @@ export default function App({ Component, pageProps }: AppProps) {
           content
         )}
       </UserProvider>
+      </div>
     </ThemeProvider>
   );
 }

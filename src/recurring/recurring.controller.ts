@@ -31,6 +31,11 @@ export class RecurringController {
     return this.recurringService.generateRecurringTasksForToday();
   }
 
+  @Get('user/:userId')
+  getByUser(@Param('userId') userId: string) {
+    return this.recurringService.getRecurringRulesForUser(userId);
+  }
+
   @Get(':taskId')
   getByTask(@Param('taskId') taskId: string) {
     return this.recurringService.getRecurringByTask(taskId);

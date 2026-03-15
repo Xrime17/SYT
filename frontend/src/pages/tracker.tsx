@@ -1,66 +1,165 @@
 'use client';
 
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Layout } from '@/components/Layout';
+import { Button } from '@/components/Button';
+import { useUser } from '@/context/UserContext';
+import useSWR from 'swr';
+import { getTasks, type Task } from '@/api/tasks';
+
+function toDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
 
 export default function TrackerPage() {
-  const dateStr = new Date().toLocaleDateString('ru-RU', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-  });
+  const { user } = useUser();
+  const [selectedDate, setSelectedDate] = useState(() => new Date());
+
+  const dateStr = useMemo(() => toDateStr(selectedDate), [selectedDate]);
+
+  const { data: tasks = [] } = useSWR<Task[]>(
+    user?.id && dateStr ? ['tasks', user.id, dateStr] : null,
+    () => getTasks(user!.id, dateStr),
+    { revalidateOnFocus: true }
+  );
+
+  const isToday =
+    selectedDate.toDateString() === new Date().toDateString();
+
+  const label = isToday
+    ? `Today – ${selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`
+    : selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+  const goPrev = () => {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() - 1);
+    setSelectedDate(d);
+  };
+
+  const goNext = () => {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() + 1);
+    setSelectedDate(d);
+  };
+
+  const completed = tasks.filter((t) => t.status === 'COMPLETED').length;
+  const total = tasks.length;
+  const hasTasks = total > 0;
 
   return (
     <Layout>
-      <h1 className="text-xl font-semibold bg-gradient-to-r from-slate-800 to-slate-700 bg-clip-text text-transparent mb-6">
-        Трекер на день
-      </h1>
+      <div className="flex flex-col gap-6">
+        <h1 className="text-xl font-semibold text-[var(--syt-text)]">
+          Tracker for today
+        </h1>
 
-      <div className="rounded-2xl border border-slate-200/80 bg-gradient-to-br from-slate-50 to-white overflow-hidden mb-4 shadow-sm">
-        <div className="p-6 flex items-center gap-3 border-b border-slate-100">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500/80 to-violet-600/80 flex items-center justify-center text-sm font-medium shrink-0 text-white">
-            ?
-          </div>
-          <div className="flex-1 min-w-0 rounded-full bg-slate-100 border border-slate-200 px-4 py-2.5 flex items-center gap-2">
-            <button type="button" className="p-1 text-slate-400 hover:text-slate-600" aria-label="Пред. день">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <span className="flex-1 text-center text-sm font-medium truncate text-slate-700">Сегодня {dateStr}</span>
-            <button type="button" className="p-1 text-slate-400 hover:text-slate-600" aria-label="След. день">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
-          <span className="text-sm text-slate-500 shrink-0">0/0</span>
-        </div>
-        <div className="p-8 flex flex-col items-center justify-center min-h-[200px]">
-          <span className="text-5xl mb-4">🦆</span>
-          <p className="text-slate-500 text-center">На сегодня задач нет</p>
-        </div>
+        {!user && (
+          <p className="text-sm text-[var(--syt-text-secondary)]">
+            Open in Telegram to see your tracker.
+          </p>
+        )}
+
+        {user && (
+          <>
+            <div className="rounded-[14px] border border-[var(--syt-border)] bg-[var(--syt-card)] p-3 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={goPrev}
+                className="rounded-lg border border-[var(--syt-border)] bg-[#2d3239] px-4 py-2 text-sm font-medium text-[var(--syt-text)] hover:opacity-90"
+                aria-label="Previous day"
+              >
+                ← Prev
+              </button>
+              <span className="flex-1 text-center text-sm font-semibold text-[var(--syt-text)] truncate">
+                {label}
+              </span>
+              <button
+                type="button"
+                onClick={goNext}
+                className="rounded-lg border border-[var(--syt-border)] bg-[#2d3239] px-4 py-2 text-sm font-medium text-[var(--syt-text)] hover:opacity-90"
+                aria-label="Next day"
+              >
+                Next →
+              </button>
+            </div>
+
+            <p className="text-sm text-[var(--syt-text-secondary)]">
+              {completed} / {total} tasks completed
+            </p>
+
+            {!hasTasks && (
+              <div className="rounded-[14px] border border-[var(--syt-border)] bg-[var(--syt-card)] p-8 flex flex-col items-center justify-center min-h-[200px] gap-6">
+                <span className="text-4xl" role="img" aria-hidden>
+                  📋
+                </span>
+                <p className="font-semibold text-base text-[var(--syt-text)]">
+                  No tasks for today
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-4">
+                  <Link href="/tasks/new">
+                    <Button
+                      className="rounded-3xl bg-[var(--syt-warning)] text-white border-0 hover:opacity-90"
+                    >
+                      Add task
+                    </Button>
+                  </Link>
+                  <Link href="/tasks">
+                    <Button
+                      variant="primary"
+                      className="rounded-3xl border border-[var(--syt-border)]"
+                    >
+                      All tasks
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            )}
+
+            {hasTasks && (
+              <div className="flex flex-col gap-3">
+                {tasks.map((task) => (
+                  <div
+                    key={task.id}
+                    className="rounded-[14px] border border-[var(--syt-border)] bg-[var(--syt-card)] p-4"
+                  >
+                    <p
+                      className={`font-medium text-sm text-[var(--syt-text)] ${
+                        task.status === 'COMPLETED' ? 'opacity-60 line-through' : ''
+                      }`}
+                    >
+                      {task.title}
+                    </p>
+                    <p className="text-xs text-[var(--syt-text-secondary)] mt-1">
+                      {task.status === 'COMPLETED' ? 'Done' : 'Active'}
+                    </p>
+                  </div>
+                ))}
+                <div className="flex flex-wrap gap-4 pt-2">
+                  <Link href="/tasks/new">
+                    <Button
+                      className="rounded-3xl bg-[var(--syt-warning)] text-white border-0 hover:opacity-90"
+                    >
+                      Add task
+                    </Button>
+                  </Link>
+                  <Link href="/tasks">
+                    <Button
+                      variant="primary"
+                      className="rounded-3xl border border-[var(--syt-border)]"
+                    >
+                      All tasks
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
-
-      <Link
-        href="/tasks/new"
-        className="w-full flex items-center justify-center gap-2 rounded-2xl py-3.5 font-medium text-sm mb-3 border border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors"
-      >
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-        </svg>
-        Добавить задачу
-      </Link>
-
-      <Link
-        href="/tasks"
-        className="w-full flex items-center justify-center gap-2 rounded-2xl py-3 font-medium text-sm text-slate-600 border border-slate-200 hover:bg-slate-50 transition-colors"
-      >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-        Все задачи
-      </Link>
     </Layout>
   );
 }

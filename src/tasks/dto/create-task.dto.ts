@@ -1,4 +1,12 @@
-import { IsNotEmpty, IsOptional, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
+import { Priority, TaskType } from '@prisma/client';
 
 export class CreateTaskDto {
   @IsString()
@@ -15,4 +23,16 @@ export class CreateTaskDto {
   @IsString()
   @MaxLength(2000, { message: 'description must be at most 2000 characters' })
   description?: string;
+
+  @IsOptional()
+  @IsEnum(TaskType)
+  type?: TaskType;
+
+  @IsOptional()
+  @IsEnum(Priority)
+  priority?: Priority;
+
+  @IsOptional()
+  @IsString()
+  dueDate?: string; // ISO date or datetime
 }

@@ -7,20 +7,32 @@ import Link from 'next/link';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
-import { TaskItem } from '@/components/TaskItem';
+import { Spinner } from '@/components/Spinner';
+import { PriorityBadge, type Priority } from '@/components/PriorityBadge';
 import { useUser } from '@/context/UserContext';
 import { getTasks, updateTask, deleteTask, type Task } from '@/api/tasks';
 
 const OpenInTelegramCard = dynamic(
   () => import('@/components/OpenInTelegramCard').then((m) => m.OpenInTelegramCard),
-  { ssr: false, loading: () => <div className="h-48 animate-pulse rounded-2xl bg-slate-100" /> }
+  { ssr: false, loading: () => <div className="h-48 animate-pulse rounded-2xl bg-[var(--syt-card)]" /> }
 );
+
+function formatDate(dueDate: string | null | undefined): string {
+  if (!dueDate) return '';
+  const d = new Date(dueDate);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function formatDue(dueDate: string | null | undefined): string {
+  if (!dueDate) return '';
+  const d = new Date(dueDate);
+  return `Due ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+}
 
 export default function TasksPage() {
   const { user, isInTelegram, telegramLoading, telegramError } = useUser();
   const [mutateError, setMutateError] = useState<string | null>(null);
 
-  // Stale-while-revalidate: показываем кэш сразу, в фоне обновляем; при возврате в приложение — revalidate
   const { data: tasks = [], error: fetchError, isLoading, mutate } = useSWR(
     user?.id ? ['tasks', user.id] : null,
     ([, userId]) => getTasks(userId),
@@ -76,85 +88,152 @@ export default function TasksPage() {
   const showList = user && !isLoading && tasks.length > 0;
   const showEmptyState = user && !isLoading && tasks.length === 0 && !error;
   const showErrorState = user && error;
-  const showAddButton = user && !isLoading;
+  const prioritySafe = (p: string): Priority =>
+    p === 'LOW' || p === 'MEDIUM' || p === 'HIGH' ? p : 'MEDIUM';
 
   return (
     <Layout>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-semibold bg-gradient-to-r from-slate-800 to-slate-700 bg-clip-text text-transparent">
-          Задачи
-        </h1>
-        {user && tasks.length > 0 && (
-          <span className="text-sm text-slate-500">
-            {completed}/{tasks.length}
-          </span>
+      <div className="flex flex-col gap-6">
+        {/* Header — Tasks + X / Y completed (Figma) */}
+        <header className="flex items-center justify-between h-12">
+          <h1 className="text-xl font-semibold text-[var(--syt-text)]">
+            Tasks
+          </h1>
+          {user && tasks.length > 0 && (
+            <span className="text-sm text-[var(--syt-text-secondary)]">
+              {completed} / {tasks.length} completed
+            </span>
+          )}
+        </header>
+
+        {!isInTelegram && !user && (
+          <div className="mx-auto max-w-md">
+            <OpenInTelegramCard />
+          </div>
+        )}
+
+        {isInTelegram && telegramLoading && !user && (
+          <div
+            className="flex flex-col items-center justify-center rounded-[20px] border-2 border-[var(--syt-accent)] bg-[var(--syt-background)] p-6 min-h-[120px] gap-4"
+          >
+            <Spinner className="w-10 h-10 border-2 border-[var(--syt-accent)] border-t-transparent" />
+            <p className="text-sm text-[var(--syt-text-secondary)]">Loading tasks...</p>
+          </div>
+        )}
+
+        {isInTelegram && telegramError && !user && (
+          <Card className="p-6 max-w-md mx-auto border-[var(--syt-error)]">
+            <p className="font-medium text-[var(--syt-text)] mb-1">Не удалось подключиться</p>
+            <p className="text-sm text-[var(--syt-text-secondary)] mb-4">{telegramError}</p>
+            <Button variant="secondary" className="rounded-xl" onClick={() => window.location.reload()}>
+              Refresh page
+            </Button>
+          </Card>
+        )}
+
+        {/* State: Loading (Figma) */}
+        {user && isLoading && (
+          <div
+            className="flex flex-col items-center justify-center rounded-[20px] border-2 border-[var(--syt-accent)] bg-[var(--syt-background)] p-6 min-h-[120px] gap-4"
+          >
+            <Spinner className="w-10 h-10 border-2 border-[var(--syt-accent)] border-t-transparent" />
+            <p className="text-sm text-[var(--syt-text-secondary)]">Loading tasks...</p>
+          </div>
+        )}
+
+        {/* State: Error (Figma) */}
+        {showErrorState && (
+          <div className="rounded-[14px] border border-[var(--syt-error)] bg-[var(--syt-card)] p-5 flex flex-col gap-3">
+            <p className="font-semibold text-base text-[var(--syt-text)]">Something went wrong</p>
+            <p className="text-sm text-[var(--syt-text-secondary)]">Please try again.</p>
+            <Button
+              variant="secondary"
+              className="rounded-xl w-fit"
+              onClick={() => mutate()}
+            >
+              Refresh page
+            </Button>
+          </div>
+        )}
+
+        {/* State: Empty (Figma) */}
+        {showEmptyState && (
+          <div className="rounded-[14px] border border-[var(--syt-border)] bg-[var(--syt-card)] p-8 flex flex-col items-center justify-center min-h-[150px] gap-6">
+            <p className="font-semibold text-base text-[var(--syt-text)]">No tasks yet</p>
+            <Link href="/tasks/new">
+              <Button variant="primary" className="rounded-xl">
+                + Add task
+              </Button>
+            </Link>
+          </div>
+        )}
+
+        {/* State: Task list (Figma) — [Title block] [Date] [Checkbox] [Delete] */}
+        {showList && (
+          <div className="flex flex-col gap-3">
+            {tasks.map((task) => {
+              const isCompleted = task.status === 'COMPLETED';
+              return (
+                <div
+                  key={task.id}
+                  className="rounded-[14px] border border-[var(--syt-border)] bg-[var(--syt-card)] p-4 flex items-center gap-3 min-h-[80px]"
+                >
+                  <div className="min-w-0 flex-1 flex flex-col gap-2">
+                    <p
+                      className={`font-medium text-sm truncate ${
+                        isCompleted
+                          ? 'text-[var(--syt-text)] opacity-60 line-through'
+                          : 'text-[var(--syt-text)]'
+                      }`}
+                    >
+                      {task.title}
+                    </p>
+                    <div>
+                      <PriorityBadge
+                        priority={prioritySafe(task.priority)}
+                        className="text-[10px] px-2 py-0.5 rounded"
+                      />
+                    </div>
+                  </div>
+                  {task.dueDate && (
+                    <span
+                      className={`text-xs shrink-0 ${
+                        isCompleted
+                          ? 'text-[var(--syt-text-secondary)] opacity-60'
+                          : 'text-[var(--syt-text-secondary)]'
+                      }`}
+                    >
+                      {isCompleted ? formatDate(task.dueDate) : formatDue(task.dueDate)}
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleToggle(task)}
+                    className={`shrink-0 w-6 h-5 rounded flex items-center justify-center transition-colors ${
+                      isCompleted
+                        ? 'bg-[var(--syt-accent-glow)] text-white'
+                        : 'border-2 border-[var(--syt-border)] bg-[var(--syt-card)] hover:border-[var(--syt-accent)]'
+                    }`}
+                    aria-label={isCompleted ? 'Mark incomplete' : 'Mark complete'}
+                  >
+                    {isCompleted && <span className="text-xs font-semibold">✔</span>}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(task)}
+                    className="shrink-0 w-8 h-8 flex items-center justify-center text-[var(--syt-text-muted)] hover:text-[var(--syt-error)] rounded"
+                    aria-label="Delete task"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
-
-      {!isInTelegram && !user && (
-        <div className="mx-auto max-w-md">
-          <OpenInTelegramCard />
-        </div>
-      )}
-
-      {isInTelegram && telegramLoading && !user && (
-        <div className="flex flex-col items-center py-12">
-          <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4" />
-          <p className="text-slate-500 text-sm">Вход…</p>
-        </div>
-      )}
-
-      {isInTelegram && telegramError && !user && (
-        <Card className="p-6 max-w-md mx-auto border-amber-200 bg-amber-50/80">
-          <p className="text-amber-800 font-medium mb-1">Не удалось подключиться</p>
-          <p className="text-amber-700/90 text-sm mb-4">{telegramError}</p>
-          <p className="text-amber-700/80 text-xs mb-4">Проверьте интернет и обновите страницу.</p>
-          <Button variant="secondary" className="w-full rounded-2xl" onClick={() => window.location.reload()}>
-            Обновить страницу
-          </Button>
-        </Card>
-      )}
-
-      {user && isLoading && (
-        <div className="flex flex-col items-center py-12">
-          <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4" />
-          <p className="text-slate-500 text-sm">Загрузка задач…</p>
-        </div>
-      )}
-
-      {showErrorState && (
-        <Card className="p-4 mb-4 border-amber-200 bg-amber-50/80">
-          <p className="text-amber-800 text-sm">{error}</p>
-          <p className="text-amber-700/80 text-xs mt-1">Проверьте подключение и обновите страницу.</p>
-        </Card>
-      )}
-
-      {showEmptyState && (
-        <Card className="p-8 text-center mb-4">
-          <p className="text-slate-600 mb-6">У вас пока нет задач. Добавьте первую.</p>
-          <Link href="/tasks/new">
-            <Button className="rounded-2xl px-6">+ Добавить задачу</Button>
-          </Link>
-        </Card>
-      )}
-
-      {showList && (
-        <div className="space-y-3">
-          {tasks.map((task) => (
-            <TaskItem key={task.id} task={task} onToggleDone={handleToggle} onDelete={handleDelete} />
-          ))}
-        </div>
-      )}
-
-      {showAddButton && (showList || showErrorState) && (
-        <div className="mt-6">
-          <Link href="/tasks/new" className="block">
-            <Button variant="secondary" className="w-full rounded-2xl py-3">
-              + Добавить задачу
-            </Button>
-          </Link>
-        </div>
-      )}
     </Layout>
   );
 }

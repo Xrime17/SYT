@@ -61,6 +61,47 @@ export class RecurringService {
     });
   }
 
+  /** List all recurring rules for a user with task title and human-readable frequency. */
+  async getRecurringRulesForUser(userId: string): Promise<
+    (RecurringRule & { taskTitle: string; frequencyLabel: string })[]
+  > {
+    const rules = await this.prisma.recurringRule.findMany({
+      where: { task: { userId } },
+      include: { task: { select: { title: true } } },
+      orderBy: { task: { createdAt: 'desc' } },
+    });
+    return rules.map((r) => {
+      const { task, ...rule } = r;
+      return {
+        ...rule,
+        taskTitle: task.title,
+        frequencyLabel: this.formatFrequencyLabel(rule),
+      };
+    });
+  }
+
+  private formatFrequencyLabel(rule: RecurringRule): string {
+    switch (rule.frequency) {
+      case 'DAILY':
+        return 'Daily';
+      case 'WEEKLY': {
+        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const names = rule.daysOfWeek
+          .filter((d) => d >= 1 && d <= 7)
+          .map((d) => days[d - 1]);
+        return names.length > 0 ? `Every ${names.join(', ')}` : 'Weekly';
+      }
+      case 'MONTHLY':
+        return rule.interval >= 1 && rule.interval <= 31
+          ? `Every month on day ${rule.interval}`
+          : 'Monthly';
+      case 'CUSTOM':
+        return `Every ${rule.interval} day(s)`;
+      default:
+        return 'Custom interval';
+    }
+  }
+
   async getRecurringByTask(taskId: string): Promise<RecurringRule> {
     const rule = await this.prisma.recurringRule.findUnique({
       where: { taskId },

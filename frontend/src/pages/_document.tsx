@@ -2,7 +2,7 @@ import { Html, Head, Main, NextScript } from "next/document";
 
 export default function Document() {
   return (
-    <Html lang="ru">
+    <Html lang="ru" className="dark" data-theme="dark">
       <Head>
         <meta name="description" content="Трекер задач, повторений и напоминаний в Telegram" />
         <link rel="preconnect" href="https://telegram.org" />
