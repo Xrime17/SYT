@@ -64,7 +64,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (tg?.onEvent && tg?.offEvent) {
       tg.onEvent('themeChanged', syncFromTelegram);
       return () => {
-        tg.offEvent('themeChanged', syncFromTelegram);
+        tg?.offEvent?.('themeChanged', syncFromTelegram);
       };
     }
 
