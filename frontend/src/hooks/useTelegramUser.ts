@@ -65,7 +65,10 @@ export function useTelegramUser() {
       try {
         const params = new URLSearchParams(window.location.search);
         if (params.has('tgWebAppData') || params.has('tgWebAppVersion')) return true;
+        const hash = window.location.hash;
+        if (hash && (hash.includes('tgWebAppData') || hash.includes('tgWebAppVersion'))) return true;
         if (window.Telegram?.WebApp?.initDataUnsafe?.user) return true;
+        if (window.Telegram?.WebApp?.initData) return true;
         if (document.referrer && /t\.me|telegram\.(me|org)/i.test(document.referrer)) return true;
         return window.self !== window.top;
       } catch {

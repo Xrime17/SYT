@@ -7,6 +7,7 @@ export default function Document() {
         <meta name="description" content="Трекер задач, повторений и напоминаний в Telegram" />
         <link rel="preconnect" href="https://telegram.org" />
         <link rel="dns-prefetch" href="https://telegram.org" />
+        <script src="https://telegram.org/js/telegram-web-app.js" />
       </Head>
       <body className="antialiased">
         <Main />
