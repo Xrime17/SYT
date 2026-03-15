@@ -22,7 +22,12 @@ export interface TelegramWebApp {
   ready: () => void;
   expand: () => void;
   isExpanded: boolean;
+  /** Тема интерфейса: "light" | "dark". Есть также в CSS как var(--tg-color-scheme). */
+  colorScheme?: 'light' | 'dark';
   themeParams?: Record<string, string>;
+  /** Подписка на смену темы (день/ночь и т.д.). */
+  onEvent?: (eventType: string, callback: () => void) => void;
+  offEvent?: (eventType: string, callback: () => void) => void;
 }
 
 declare global {

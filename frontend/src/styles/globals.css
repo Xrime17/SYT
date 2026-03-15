@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Тема из Telegram (светлая/тёмная): на <html> вешается class="dark" или data-theme="dark". */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #f8fafc;
   --surface: #ffffff;

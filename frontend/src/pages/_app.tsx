@@ -2,6 +2,7 @@ import '@/styles/globals.css';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { SWRConfig } from 'swr';
+import { ThemeProvider } from '@/context/ThemeContext';
 import { UserProvider } from '@/context/UserContext';
 import { TelegramUserLoader } from '@/components/TelegramUserLoader';
 import { CACHE_DISABLED } from '@/config';
@@ -43,12 +44,14 @@ export default function App({ Component, pageProps }: AppProps) {
   );
 
   return (
-    <UserProvider>
-      {CACHE_DISABLED ? (
-        <SWRConfig value={{ provider: () => emptyCache }}>{content}</SWRConfig>
-      ) : (
-        content
-      )}
-    </UserProvider>
+    <ThemeProvider>
+      <UserProvider>
+        {CACHE_DISABLED ? (
+          <SWRConfig value={{ provider: () => emptyCache }}>{content}</SWRConfig>
+        ) : (
+          content
+        )}
+      </UserProvider>
+    </ThemeProvider>
   );
 }

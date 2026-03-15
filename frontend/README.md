@@ -41,6 +41,13 @@ WEB_APP_URL=https://твой-фронт.vercel.app
 
 После запуска бэкенда бот выставит кнопку меню **Open** с этим URL.
 
+## Тема (светлая/тёмная)
+
+Тема автоматически берётся из Telegram: при переключении «День/Ночь» в настройках Telegram приложение получает `colorScheme: 'light' | 'dark'` и событие `theme_changed`. На `<html>` выставляются `data-theme="light"|"dark"` и класс `dark` для Tailwind. Вне Telegram используется системная тема (`prefers-color-scheme`).
+
+- **Контекст:** `useTheme()` из `@/context/ThemeContext` — возвращает `{ theme: 'light' | 'dark', themeParams }`. `themeParams` — объект цветов Telegram (`bg_color`, `text_color`, `button_color` и т.д.) для кастомного дизайна.
+- **В стилях:** используй префикс `dark:` в Tailwind (например `bg-white dark:bg-slate-900`). Класс `dark` на корне уже выставляется по теме Telegram.
+
 ## Кеширование
 
 - **Пользователь (useTelegramUser):** кэш в `localStorage` с TTL **5 минут**. При открытии приложения данные старше 5 минут не показываются из кэша — идёт запрос к API, затем обновление экрана. Свежий кэш показывается сразу, в фоне выполняется повторный запрос и подмена данными с сервера.
@@ -53,6 +60,7 @@ WEB_APP_URL=https://твой-фронт.vercel.app
 - `src/hooks/useTelegramUser.ts` — автовход по Telegram initData
 - `src/api` — client, users, tasks, recurring, reminders
 - `src/context/UserContext.tsx` — пользователь, telegramLoading, telegramError
+- `src/context/ThemeContext.tsx` — тема из Telegram (light/dark), themeParams
 
 ## Следующий шаг
 
