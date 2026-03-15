@@ -1,8 +1,10 @@
 import '@/styles/globals.css';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
+import { SWRConfig } from 'swr';
 import { UserProvider } from '@/context/UserContext';
 import { TelegramUserLoader } from '@/components/TelegramUserLoader';
+import { CACHE_DISABLED } from '@/config';
 
 function ApiPreconnect() {
   const url = process.env.NEXT_PUBLIC_API_URL;
@@ -21,15 +23,32 @@ function ApiPreconnect() {
   );
 }
 
+const emptyCache = {
+  get: () => undefined,
+  set: () => {},
+  delete: () => {},
+  keys: function* () {},
+};
+
 export default function App({ Component, pageProps }: AppProps) {
-  return (
-    <UserProvider>
+  const content = (
+    <>
       <Head>
         <title>Syt — Трекер задач</title>
       </Head>
       <ApiPreconnect />
       <TelegramUserLoader />
       <Component {...pageProps} />
+    </>
+  );
+
+  return (
+    <UserProvider>
+      {CACHE_DISABLED ? (
+        <SWRConfig value={{ provider: () => emptyCache }}>{content}</SWRConfig>
+      ) : (
+        content
+      )}
     </UserProvider>
   );
 }

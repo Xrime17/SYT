@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { useUser } from '@/context/UserContext';
 import { getOrCreateUserByTelegram, type User } from '@/api/users';
 import { API_BASE } from '@/api/client';
+import { CACHE_DISABLED } from '@/config';
 
 /**
  * In Telegram Mini App: load script if needed, then get-or-create user (1 API call) and set in context.
@@ -26,6 +27,7 @@ export function useTelegramUser() {
     const USER_CACHE_MAX_AGE_MS = 5 * 60 * 1000;
 
     const readCachedUser = (telegramId: number): User | null => {
+      if (CACHE_DISABLED) return null;
       try {
         const raw = window.localStorage.getItem(CACHE_KEY);
         if (!raw) return null;
@@ -44,6 +46,7 @@ export function useTelegramUser() {
     };
 
     const writeCachedUser = (telegramId: number, user: User) => {
+      if (CACHE_DISABLED) return;
       try {
         window.localStorage.setItem(
           CACHE_KEY,

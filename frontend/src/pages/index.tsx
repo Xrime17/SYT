@@ -14,19 +14,32 @@ export default function Home() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const params = new URLSearchParams(window.location.search);
-    const inTelegram =
-      isInTelegram ||
-      params.has('tgWebAppData') ||
-      params.has('tgWebAppVersion') ||
-      !!window.Telegram?.WebApp?.initDataUnsafe?.user ||
-      !!window.Telegram?.WebApp ||
-      (document.referrer ? /t\.me|telegram\.(me|org)/i.test(document.referrer) : false) ||
-      window.self !== window.top;
 
-    if (!inTelegram) {
+    const looksLikeTelegram = () => {
+      const params = new URLSearchParams(window.location.search);
+      return (
+        isInTelegram ||
+        params.has('tgWebAppData') ||
+        params.has('tgWebAppVersion') ||
+        !!window.Telegram?.WebApp?.initDataUnsafe?.user ||
+        !!window.Telegram?.WebApp ||
+        (document.referrer ? /t\.me|telegram\.(me|org)/i.test(document.referrer) : false) ||
+        window.self !== window.top
+      );
+    };
+
+    // В iframe (Mini App) никогда не редиректим — иначе при открытии по кнопке «ОТКРЫТЬ» уходим в чат с ботом.
+    if (window.self !== window.top) return;
+
+    if (looksLikeTelegram()) return;
+
+    // Даём время загрузиться скрипту Telegram и выставить isInTelegram, затем редирект только если точно не в ТГ.
+    const t = setTimeout(() => {
+      if (looksLikeTelegram()) return;
       window.location.replace(BOT_LINK);
-    }
+    }, 2500);
+
+    return () => clearTimeout(t);
   }, [isInTelegram]);
 
   return (
