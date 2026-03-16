@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import { useRouter } from 'next/router';
+import { mutate } from 'swr';
 import Link from 'next/link';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/Button';
@@ -41,6 +42,7 @@ export default function NewTaskPage() {
           priority,
           dueDate: dueDate || undefined,
         });
+        await mutate(['tasks', user.id]);
         router.push('/tasks');
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Ошибка');
@@ -48,7 +50,7 @@ export default function NewTaskPage() {
         setLoading(false);
       }
     },
-    [user, title, description, router]
+    [user, title, description, taskType, priority, dueDate, router]
   );
 
   if (!user) {

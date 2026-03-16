@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
+import { mutate } from 'swr';
 import Link from 'next/link';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/Button';
@@ -81,6 +82,7 @@ export default function NewRecurringPage() {
           payload.endDate = new Date(endDate).toISOString();
         }
         await createRecurring(payload);
+        await mutate(['recurring', user.id]);
         router.push('/recurring');
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Failed to create rule');

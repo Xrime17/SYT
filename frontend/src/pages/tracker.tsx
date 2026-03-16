@@ -54,7 +54,7 @@ export default function TrackerPage() {
     <Layout>
       <div className="flex flex-col gap-6">
         <h1 className="text-xl font-semibold text-[var(--syt-text)]">
-          Tracker for today
+          {isToday ? 'Tracker for today' : 'Tracker'}
         </h1>
 
         {!user && (

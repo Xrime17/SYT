@@ -84,7 +84,11 @@ export class UsersService {
   ): Promise<User> {
     return this.prisma.user.upsert({
       where: { telegramId: BigInt(telegramId) },
-      update: {},
+      update: {
+        firstName,
+        ...(lastName !== undefined && { lastName }),
+        ...(username !== undefined && { username }),
+      },
       create: {
         telegramId: BigInt(telegramId),
         firstName,

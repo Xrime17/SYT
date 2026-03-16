@@ -83,7 +83,7 @@ export default function RemindersPage() {
 
   return (
     <Layout>
-      <div className="flex flex-col gap-6 p-4 max-w-[640px] mx-auto min-h-full">
+      <div className="flex flex-col gap-6">
         <h1 className="text-xl font-semibold text-[var(--syt-text)]">
           Reminders
         </h1>

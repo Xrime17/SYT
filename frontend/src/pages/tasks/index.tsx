@@ -7,7 +7,6 @@ import Link from 'next/link';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
-import { Spinner } from '@/components/Spinner';
 import { PriorityBadge, type Priority } from '@/components/PriorityBadge';
 import { useUser } from '@/context/UserContext';
 import { getTasks, updateTask, deleteTask, type Task } from '@/api/tasks';
@@ -85,9 +84,9 @@ export default function TasksPage() {
       : null);
 
   const completed = tasks.filter((t) => t.status === 'COMPLETED').length;
-  const showList = user && !isLoading && tasks.length > 0;
-  const showEmptyState = user && !isLoading && tasks.length === 0 && !error;
-  const showErrorState = user && error;
+  const showList = user && tasks.length > 0;
+  const showEmptyState = user && tasks.length === 0 && !error;
+  const showErrorState = user && !isLoading && error;
   const prioritySafe = (p: string): Priority =>
     p === 'LOW' || p === 'MEDIUM' || p === 'HIGH' ? p : 'MEDIUM';
 
@@ -113,11 +112,8 @@ export default function TasksPage() {
         )}
 
         {isInTelegram && telegramLoading && !user && (
-          <div
-            className="flex flex-col items-center justify-center rounded-[20px] border-2 border-[var(--syt-accent)] bg-[var(--syt-background)] p-6 min-h-[120px] gap-4"
-          >
-            <Spinner className="w-10 h-10 border-2 border-[var(--syt-accent)] border-t-transparent" />
-            <p className="text-sm text-[var(--syt-text-secondary)]">Loading tasks...</p>
+          <div className="rounded-[14px] border border-[var(--syt-border)] bg-[var(--syt-card)] p-8 flex flex-col items-center justify-center min-h-[150px] gap-4">
+            <p className="text-sm text-[var(--syt-text-secondary)]">Connecting…</p>
           </div>
         )}
 
@@ -131,15 +127,7 @@ export default function TasksPage() {
           </Card>
         )}
 
-        {/* State: Loading (Figma) */}
-        {user && isLoading && (
-          <div
-            className="flex flex-col items-center justify-center rounded-[20px] border-2 border-[var(--syt-accent)] bg-[var(--syt-background)] p-6 min-h-[120px] gap-4"
-          >
-            <Spinner className="w-10 h-10 border-2 border-[var(--syt-accent)] border-t-transparent" />
-            <p className="text-sm text-[var(--syt-text-secondary)]">Loading tasks...</p>
-          </div>
-        )}
+        {/* No loading spinner — go straight to empty state or task list */}
 
         {/* State: Error (Figma) */}
         {showErrorState && (
@@ -171,6 +159,13 @@ export default function TasksPage() {
         {/* State: Task list (Figma) — [Title block] [Date] [Checkbox] [Delete] */}
         {showList && (
           <div className="flex flex-col gap-3">
+            <div className="flex justify-end">
+              <Link href="/tasks/new">
+                <Button variant="primary" className="rounded-xl text-sm">
+                  + Add task
+                </Button>
+              </Link>
+            </div>
             {tasks.map((task) => {
               const isCompleted = task.status === 'COMPLETED';
               return (

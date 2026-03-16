@@ -151,11 +151,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <Link
             href="/tasks"
             className={`flex flex-col items-center justify-center flex-1 py-2 text-[11px] gap-0.5 ${
-              pathname === '/tasks'
+              pathname === '/tasks' || pathname.startsWith('/tasks/')
                 ? 'text-[var(--syt-accent)] font-semibold'
                 : 'text-[var(--syt-text-secondary)]'
             }`}
-            aria-current={pathname === '/tasks' ? 'page' : undefined}
+            aria-current={pathname.startsWith('/tasks') ? 'page' : undefined}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
@@ -165,11 +165,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <Link
             href="/recurring"
             className={`flex flex-col items-center justify-center flex-1 py-2 text-[11px] gap-0.5 ${
-              pathname === '/recurring'
+              pathname === '/recurring' || pathname.startsWith('/recurring/')
                 ? 'text-[var(--syt-accent)] font-semibold'
                 : 'text-[var(--syt-text-secondary)]'
             }`}
-            aria-current={pathname === '/recurring' ? 'page' : undefined}
+            aria-current={pathname.startsWith('/recurring') ? 'page' : undefined}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />

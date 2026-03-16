@@ -1,4 +1,5 @@
 import {
+  IsDateString,
   IsEnum,
   IsNotEmpty,
   IsOptional,
@@ -33,6 +34,6 @@ export class CreateTaskDto {
   priority?: Priority;
 
   @IsOptional()
-  @IsString()
-  dueDate?: string; // ISO date or datetime
+  @IsDateString({}, { message: 'dueDate must be a valid ISO 8601 date string' })
+  dueDate?: string;
 }
