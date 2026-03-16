@@ -1,18 +1,18 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
-import { Reminder } from '@prisma/client';
+import { Reminder, Task, User } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+
+export type DueReminderWithContext = Reminder & {
+  task: Pick<Task, 'id' | 'title' | 'userId'> & {
+    user: Pick<User, 'telegramId'>;
+  };
+};
 
 @Injectable()
 export class RemindersService {
   private readonly logger = new Logger(RemindersService.name);
 
   constructor(private readonly prisma: PrismaService) {}
-
-  @Cron('* * * * *')
-  async runDueRemindersCron(): Promise<void> {
-    await this.processDueReminders();
-  }
 
   async createReminder(taskId: string, remindAt: Date): Promise<Reminder> {
     const task = await this.prisma.task.findUnique({
@@ -59,24 +59,27 @@ export class RemindersService {
     });
   }
 
-  async processDueReminders(): Promise<Reminder[]> {
+  /** Returns unsent due reminders with task title and user telegramId for notification sending. */
+  async findDueReminders(): Promise<DueReminderWithContext[]> {
     const now = new Date();
-    const due = await this.prisma.reminder.findMany({
-      where: {
-        remindAt: { lte: now },
-        sent: false,
-      },
+    return this.prisma.reminder.findMany({
+      where: { remindAt: { lte: now }, sent: false },
       orderBy: { remindAt: 'asc' },
+      include: {
+        task: {
+          select: { id: true, title: true, userId: true, user: { select: { telegramId: true } } },
+        },
+      },
+    }) as Promise<DueReminderWithContext[]>;
+  }
+
+  /** Marks a batch of reminders as sent by IDs. */
+  async markBatchAsSent(ids: string[]): Promise<void> {
+    if (ids.length === 0) return;
+    await this.prisma.reminder.updateMany({
+      where: { id: { in: ids } },
+      data: { sent: true },
     });
-    if (due.length > 0) {
-      this.logger.log(
-        `Due reminders (not sending): ${due.length} reminder(s)`,
-      );
-      await this.prisma.reminder.updateMany({
-        where: { id: { in: due.map((r) => r.id) } },
-        data: { sent: true },
-      });
-    }
-    return due;
+    this.logger.log(`Marked ${ids.length} reminder(s) as sent`);
   }
 }

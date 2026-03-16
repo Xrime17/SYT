@@ -84,9 +84,10 @@ export default function TasksPage() {
       : null);
 
   const completed = tasks.filter((t) => t.status === 'COMPLETED').length;
+  const showLoading = user && isLoading && tasks.length === 0;
   const showList = user && tasks.length > 0;
-  const showEmptyState = user && tasks.length === 0 && !error;
-  const showErrorState = user && !isLoading && error;
+  const showEmptyState = user && !isLoading && tasks.length === 0 && !error;
+  const showErrorState = user && !isLoading && !!error;
   const prioritySafe = (p: string): Priority =>
     p === 'LOW' || p === 'MEDIUM' || p === 'HIGH' ? p : 'MEDIUM';
 
@@ -127,7 +128,12 @@ export default function TasksPage() {
           </Card>
         )}
 
-        {/* No loading spinner — go straight to empty state or task list */}
+        {/* State: Loading */}
+        {showLoading && (
+          <div className="rounded-[14px] border border-[var(--syt-border)] bg-[var(--syt-card)] p-8 flex items-center justify-center min-h-[120px]">
+            <p className="text-sm text-[var(--syt-text-secondary)]">Loading tasks…</p>
+          </div>
+        )}
 
         {/* State: Error (Figma) */}
         {showErrorState && (

@@ -21,7 +21,7 @@ export default function TrackerPage() {
 
   const dateStr = useMemo(() => toDateStr(selectedDate), [selectedDate]);
 
-  const { data: tasks = [] } = useSWR<Task[]>(
+  const { data: tasks = [], isLoading: tasksLoading } = useSWR<Task[]>(
     user?.id && dateStr ? ['tasks', user.id, dateStr] : null,
     () => getTasks(user!.id, dateStr),
     { revalidateOnFocus: true }
@@ -49,6 +49,7 @@ export default function TrackerPage() {
   const completed = tasks.filter((t) => t.status === 'COMPLETED').length;
   const total = tasks.length;
   const hasTasks = total > 0;
+  const isLoadingTasks = user && tasksLoading && total === 0;
 
   return (
     <Layout>
@@ -91,13 +92,19 @@ export default function TrackerPage() {
               {completed} / {total} tasks completed
             </p>
 
-            {!hasTasks && (
+            {isLoadingTasks && (
+              <div className="rounded-[14px] border border-[var(--syt-border)] bg-[var(--syt-card)] p-8 flex items-center justify-center min-h-[120px]">
+                <p className="text-sm text-[var(--syt-text-secondary)]">Loading tasks…</p>
+              </div>
+            )}
+
+            {!isLoadingTasks && !hasTasks && (
               <div className="rounded-[14px] border border-[var(--syt-border)] bg-[var(--syt-card)] p-8 flex flex-col items-center justify-center min-h-[200px] gap-6">
                 <span className="text-4xl" role="img" aria-hidden>
                   📋
                 </span>
                 <p className="font-semibold text-base text-[var(--syt-text)]">
-                  No tasks for today
+                  No tasks for this day
                 </p>
                 <div className="flex flex-wrap items-center justify-center gap-4">
                   <Link href="/tasks/new">

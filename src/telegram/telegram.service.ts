@@ -6,6 +6,7 @@ import { RemindersService } from '../reminders/reminders.service';
 import { TasksService } from '../tasks/tasks.service';
 import { UsersService } from '../users/users.service';
 
+import { Cron } from '@nestjs/schedule';
 import { Telegraf, Markup } from 'telegraf';
 
 const MSG_NEED_START = 'Сначала /start';
@@ -468,6 +469,42 @@ export class TelegramService implements OnModuleInit {
         e instanceof Error ? e.message : 'Правило не найдено или ошибка.';
       await ctx.reply(msg).catch(() => {});
     }
+  }
+
+  /** Runs every minute: sends Telegram messages for due reminders, then marks them sent. */
+  @Cron('* * * * *')
+  async sendDueReminders(): Promise<void> {
+    const due = await this.remindersService.findDueReminders();
+    if (due.length === 0) return;
+
+    const sent: string[] = [];
+
+    for (const reminder of due) {
+      const telegramId = Number(reminder.task.user.telegramId);
+      const taskTitle = reminder.task.title;
+      const timeStr = reminder.remindAt.toLocaleTimeString('ru-RU', {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'UTC',
+      });
+      const message = `⏰ Напоминание: «${taskTitle}» — ${timeStr} UTC`;
+
+      if (this.bot) {
+        try {
+          await this.bot.telegram.sendMessage(telegramId, message);
+          this.logger.log(`Reminder sent to telegramId=${telegramId}: "${taskTitle}"`);
+        } catch (e) {
+          this.logger.warn(
+            `Failed to send reminder ${reminder.id} to ${telegramId}: ${e instanceof Error ? e.message : String(e)}`,
+          );
+        }
+      } else {
+        this.logger.warn(`Bot not available, skipping notification for reminder ${reminder.id}`);
+      }
+      sent.push(reminder.id);
+    }
+
+    await this.remindersService.markBatchAsSent(sent);
   }
 
   private async handleRemind(ctx: TelegrafContext): Promise<void> {
