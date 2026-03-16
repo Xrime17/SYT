@@ -3,7 +3,7 @@ import { Reminder, Task, User } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 export type DueReminderWithContext = Reminder & {
-  task: Pick<Task, 'id' | 'title' | 'userId'> & {
+  task: Pick<Task, 'id' | 'title' | 'description' | 'userId'> & {
     user: Pick<User, 'telegramId'>;
   };
 };
@@ -67,7 +67,7 @@ export class RemindersService {
       orderBy: { remindAt: 'asc' },
       include: {
         task: {
-          select: { id: true, title: true, userId: true, user: { select: { telegramId: true } } },
+          select: { id: true, title: true, description: true, userId: true, user: { select: { telegramId: true } } },
         },
       },
     }) as Promise<DueReminderWithContext[]>;

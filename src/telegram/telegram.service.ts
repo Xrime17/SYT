@@ -482,12 +482,16 @@ export class TelegramService implements OnModuleInit {
     for (const reminder of due) {
       const telegramId = Number(reminder.task.user.telegramId);
       const taskTitle = reminder.task.title;
+      const taskDesc = reminder.task.description;
       const timeStr = reminder.remindAt.toLocaleTimeString('ru-RU', {
         hour: '2-digit',
         minute: '2-digit',
         timeZone: 'UTC',
       });
-      const message = `⏰ Напоминание: «${taskTitle}» — ${timeStr} UTC`;
+      let message = `⏰ Напоминание: «${taskTitle}» — ${timeStr} UTC`;
+      if (taskDesc) {
+        message += `\n\n${taskDesc}`;
+      }
 
       if (this.bot) {
         try {

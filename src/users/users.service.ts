@@ -88,6 +88,7 @@ export class UsersService {
         firstName,
         ...(lastName !== undefined && { lastName }),
         ...(username !== undefined && { username }),
+        ...(timezone !== undefined && timezone !== '' && { timezone }),
       },
       create: {
         telegramId: BigInt(telegramId),

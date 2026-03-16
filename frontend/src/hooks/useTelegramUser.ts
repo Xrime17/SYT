@@ -134,6 +134,10 @@ export function useTelegramUser() {
       const firstName = tgUser.first_name ?? '';
       const lastName = tgUser.last_name ?? undefined;
       const username = tgUser.username ?? undefined;
+      const timezone =
+        typeof Intl !== 'undefined' && Intl.DateTimeFormat
+          ? Intl.DateTimeFormat().resolvedOptions().timeZone
+          : undefined;
       const cachedUser = readCachedUser(telegramId);
       let unblocked = false;
 
@@ -168,6 +172,7 @@ export function useTelegramUser() {
                 firstName,
                 lastName,
                 username,
+                timezone,
               },
               attempts[i]
             );

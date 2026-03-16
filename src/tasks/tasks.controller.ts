@@ -41,8 +41,14 @@ export class TasksController {
   getTasks(
     @Param('userId') userId: string,
     @Query('date') date?: string,
+    @Query('timezone') timezone?: string,
+    @Query('timezoneOffsetMinutes') timezoneOffsetMinutes?: string,
   ) {
-    return this.tasksService.getTasks(userId, date);
+    const offset =
+      timezoneOffsetMinutes != null && timezoneOffsetMinutes !== ''
+        ? parseInt(timezoneOffsetMinutes, 10)
+        : undefined;
+    return this.tasksService.getTasks(userId, date, timezone, Number.isFinite(offset) ? offset : undefined);
   }
 
   @Patch(':taskId')
@@ -55,6 +61,7 @@ export class TasksController {
       ...(dto.description !== undefined && { description: dto.description }),
       ...(dto.status !== undefined && { status: dto.status }),
       ...(dto.priority !== undefined && { priority: dto.priority }),
+      ...(dto.type !== undefined && { type: dto.type }),
       ...(dto.dueDate !== undefined && {
         dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
       }),

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 import { mutate } from 'swr';
 import Link from 'next/link';
@@ -8,6 +8,7 @@ import { Layout } from '@/components/Layout';
 import { Button } from '@/components/Button';
 import { useUser } from '@/context/UserContext';
 import { createTask } from '@/api/tasks';
+import { getDateBounds, clampDate } from '@/utils/date-bounds';
 
 const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH'] as const;
 const TASK_TYPES = ['TASK', 'GOAL', 'NOTE'] as const;
@@ -20,6 +21,7 @@ export default function NewTaskPage() {
   const [priority, setPriority] = useState<(typeof PRIORITIES)[number]>('MEDIUM');
   const [taskType, setTaskType] = useState<(typeof TASK_TYPES)[number]>('TASK');
   const [dueDate, setDueDate] = useState('');
+  const { minDate, maxDate } = useMemo(() => getDateBounds(), []);
   const [touched, setTouched] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -165,7 +167,10 @@ export default function NewTaskPage() {
             <input
               type="date"
               value={dueDate}
+              min={minDate}
+              max={maxDate}
               onChange={(e) => setDueDate(e.target.value)}
+              onBlur={() => setDueDate((v) => clampDate(v, minDate, maxDate))}
               className="w-full rounded-[10px] border border-[var(--syt-border)] bg-[var(--syt-card)] px-3 py-2.5 text-sm text-[var(--syt-text)] focus:outline-none focus:ring-2 focus:ring-[var(--syt-accent)]"
             />
           </div>

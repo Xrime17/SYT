@@ -7,32 +7,43 @@ import { Button } from '@/components/Button';
 import { useUser } from '@/context/UserContext';
 import useSWR from 'swr';
 import { getTasks, type Task } from '@/api/tasks';
+import { getDetectedLocale, getDetectedTimezone, getDeviceOffsetMinutes } from '@/utils/locale';
 
-function toDateStr(d: Date): string {
+/** Calendar day in device local time (robust to VPN). Use for API when sending timezoneOffsetMinutes. */
+function toDateStrLocal(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
 }
 
+const dateLabelOpts: Intl.DateTimeFormatOptions = {
+  weekday: 'short',
+  month: 'short',
+  day: 'numeric',
+};
+
 export default function TrackerPage() {
   const { user } = useUser();
   const [selectedDate, setSelectedDate] = useState(() => new Date());
 
-  const dateStr = useMemo(() => toDateStr(selectedDate), [selectedDate]);
+  const timezone = user?.timezone || getDetectedTimezone();
+  const locale = getDetectedLocale();
+  const offsetMinutes = getDeviceOffsetMinutes();
+
+  const dateStr = useMemo(() => toDateStrLocal(selectedDate), [selectedDate]);
 
   const { data: tasks = [], isLoading: tasksLoading } = useSWR<Task[]>(
-    user?.id && dateStr ? ['tasks', user.id, dateStr] : null,
-    () => getTasks(user!.id, dateStr),
+    user?.id && dateStr ? ['tasks', user.id, dateStr, offsetMinutes] : null,
+    () => getTasks(user!.id, dateStr, timezone, offsetMinutes),
     { revalidateOnFocus: true }
   );
 
-  const isToday =
-    selectedDate.toDateString() === new Date().toDateString();
+  const isToday = toDateStrLocal(new Date()) === dateStr;
 
   const label = isToday
-    ? `Today – ${selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`
-    : selectedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    ? `Today – ${selectedDate.toLocaleDateString(locale, { ...dateLabelOpts, timeZone: timezone })}`
+    : selectedDate.toLocaleDateString(locale, { ...dateLabelOpts, timeZone: timezone });
 
   const goPrev = () => {
     const d = new Date(selectedDate);

@@ -179,7 +179,10 @@ export default function TasksPage() {
                   key={task.id}
                   className="rounded-[14px] border border-[var(--syt-border)] bg-[var(--syt-card)] p-4 flex items-center gap-3 min-h-[80px]"
                 >
-                  <div className="min-w-0 flex-1 flex flex-col gap-2">
+                  <Link
+                    href={`/tasks/${task.id}`}
+                    className="min-w-0 flex-1 flex flex-col gap-2"
+                  >
                     <p
                       className={`font-medium text-sm truncate ${
                         isCompleted
@@ -195,7 +198,7 @@ export default function TasksPage() {
                         className="text-[10px] px-2 py-0.5 rounded"
                       />
                     </div>
-                  </div>
+                  </Link>
                   {task.dueDate && (
                     <span
                       className={`text-xs shrink-0 ${

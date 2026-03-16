@@ -20,6 +20,17 @@ export type CreateTaskOptions = {
 export class TasksService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Clamp dueDate: past → today start-of-day, beyond +1 year → max. null/undefined pass through. */
+  private clampDueDate(d: Date | null | undefined): Date | null | undefined {
+    if (d === null || d === undefined) return d;
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const maxDate = new Date(todayStart.getFullYear() + 1, todayStart.getMonth(), todayStart.getDate());
+    if (d < todayStart) return todayStart;
+    if (d > maxDate) return maxDate;
+    return d;
+  }
+
   async createTask(
     userId: string,
     title: string,
@@ -27,12 +38,13 @@ export class TasksService {
     options?: CreateTaskOptions,
   ): Promise<Task> {
     try {
+      const clampedDue = this.clampDueDate(options?.dueDate);
       return await this.prisma.task.create({
         data: {
           userId,
           title,
           description,
-          ...(options?.dueDate !== undefined && { dueDate: options.dueDate }),
+          ...(clampedDue !== undefined && { dueDate: clampedDue }),
           ...(options?.priority !== undefined && { priority: options.priority }),
           ...(options?.type !== undefined && { type: options.type }),
         },
@@ -48,16 +60,76 @@ export class TasksService {
     }
   }
 
-  async getTasks(userId: string, date?: string): Promise<Task[]> {
+  /**
+   * Returns [startUTC, endUTC] for the calendar day YYYY-MM-DD.
+   * Prefers device offset (minutes ahead of UTC) — reflects actual device time, robust to VPN.
+   * Falls back to IANA timezone, then UTC day.
+   */
+  private getDayRangeInTimezone(
+    dateStr: string,
+    timezone?: string,
+    timezoneOffsetMinutes?: number,
+  ): { start: Date; end: Date } | null {
+    const [y, m, day] = dateStr.split('-').map(Number);
+    if (isNaN(y) || isNaN(m) || isNaN(day)) return null;
+    const refUtc = Date.UTC(y, m - 1, day, 0, 0, 0, 0);
+
+    if (typeof timezoneOffsetMinutes === 'number' && timezoneOffsetMinutes >= -720 && timezoneOffsetMinutes <= 720) {
+      const offsetMs = timezoneOffsetMinutes * 60 * 1000;
+      const startUtcMs = refUtc - offsetMs;
+      return {
+        start: new Date(startUtcMs),
+        end: new Date(startUtcMs + 86400000 - 1),
+      };
+    }
+
+    if (!timezone || typeof timezone !== 'string' || timezone.length > 64) {
+      return {
+        start: new Date(refUtc),
+        end: new Date(Date.UTC(y, m - 1, day, 23, 59, 59, 999)),
+      };
+    }
+
+    try {
+      const formatter = new Intl.DateTimeFormat('en-GB', {
+        timeZone: timezone,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false,
+      });
+      const parts = formatter.formatToParts(new Date(refUtc));
+      const get = (k: string) => parts.find((p) => p.type === k)?.value ?? '0';
+      const localHour = parseInt(get('hour'), 10) || 0;
+      const localMin = parseInt(get('minute'), 10) || 0;
+      const localSec = parseInt(get('second'), 10) || 0;
+      const offsetMs =
+        (localHour * 3600 + localMin * 60 + localSec) * 1000;
+      const startUtcMs = refUtc - offsetMs;
+      const start = new Date(startUtcMs);
+      const end = new Date(startUtcMs + 86400000 - 1);
+      return { start, end };
+    } catch {
+      return {
+        start: new Date(refUtc),
+        end: new Date(Date.UTC(y, m - 1, day, 23, 59, 59, 999)),
+      };
+    }
+  }
+
+  async getTasks(
+    userId: string,
+    date?: string,
+    timezone?: string,
+    timezoneOffsetMinutes?: number,
+  ): Promise<Task[]> {
     const where: Prisma.TaskWhereInput = { userId };
     if (date) {
-      const [y, m, d] = date.split('-').map(Number);
-      if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
-        const start = new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0));
-        const end = new Date(Date.UTC(y, m - 1, d, 23, 59, 59, 999));
+      const range = this.getDayRangeInTimezone(date, timezone, timezoneOffsetMinutes);
+      if (range) {
         where.OR = [
-          { dueDate: { gte: start, lte: end } },
-          { generatedDate: { gte: start, lte: end } },
+          { dueDate: { gte: range.start, lte: range.end } },
+          { generatedDate: { gte: range.start, lte: range.end } },
         ];
       }
     }
@@ -82,6 +154,7 @@ export class TasksService {
     data: UpdateTaskData,
   ): Promise<Task> {
     try {
+      const clampedDue = data.dueDate !== undefined ? this.clampDueDate(data.dueDate) : undefined;
       return await this.prisma.task.update({
         where: { id: taskId },
         data: {
@@ -91,8 +164,8 @@ export class TasksService {
           }),
           ...(data.status !== undefined && { status: data.status }),
           ...(data.priority !== undefined && { priority: data.priority }),
-          ...(data.dueDate !== undefined && {
-            dueDate: data.dueDate === null ? null : data.dueDate,
+          ...(clampedDue !== undefined && {
+            dueDate: clampedDue === null ? null : clampedDue,
           }),
         },
       });

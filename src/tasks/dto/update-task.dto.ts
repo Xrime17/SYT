@@ -6,7 +6,7 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
-import { Priority, TaskStatus } from '@prisma/client';
+import { Priority, TaskStatus, TaskType } from '@prisma/client';
 
 export class UpdateTaskDto {
   @IsOptional()
@@ -27,6 +27,10 @@ export class UpdateTaskDto {
   @IsOptional()
   @IsEnum(Priority, { message: 'priority must be LOW, MEDIUM or HIGH' })
   priority?: Priority;
+
+  @IsOptional()
+  @IsEnum(TaskType, { message: 'type must be TASK, GOAL or NOTE' })
+  type?: TaskType;
 
   @IsOptional()
   @IsDateString({}, { message: 'dueDate must be a valid ISO 8601 date string' })

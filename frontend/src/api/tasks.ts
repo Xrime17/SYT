@@ -15,8 +15,18 @@ export interface Task {
   generatedDate?: string | null;
 }
 
-export async function getTasks(userId: string, date?: string): Promise<Task[]> {
-  const url = date ? `/tasks/${userId}?date=${encodeURIComponent(date)}` : `/tasks/${userId}`;
+export async function getTasks(
+  userId: string,
+  date?: string,
+  timezone?: string,
+  timezoneOffsetMinutes?: number,
+): Promise<Task[]> {
+  const params = new URLSearchParams();
+  if (date) params.set('date', date);
+  if (timezone) params.set('timezone', timezone);
+  if (typeof timezoneOffsetMinutes === 'number') params.set('timezoneOffsetMinutes', String(timezoneOffsetMinutes));
+  const qs = params.toString();
+  const url = qs ? `/tasks/${userId}?${qs}` : `/tasks/${userId}`;
   return request<Task[]>(url);
 }
 
@@ -40,7 +50,7 @@ export async function createTask(data: {
 
 export async function updateTask(
   taskId: string,
-  data: { title?: string; description?: string; status?: string; priority?: string; dueDate?: string | null }
+  data: { title?: string; description?: string; status?: string; priority?: string; type?: string; dueDate?: string | null }
 ): Promise<Task> {
   return request<Task>(`/tasks/${taskId}`, {
     method: 'PATCH',
