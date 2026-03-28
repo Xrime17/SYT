@@ -6,6 +6,7 @@ import {
 import { Prisma } from '@prisma/client';
 import { User } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { DEFAULT_HOME_CATEGORIES } from '../constants/home-category.defaults';
 
 export type UpdateUserData = {
   firstName?: string;
@@ -19,6 +20,23 @@ export type UpdateUserData = {
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /**
+   * Пресеты Home (water, reading, food, exercise). Идемпотентно: `@@unique([userId, iconKey])` + skipDuplicates
+   * защищает от гонок при первом входе; недостающие пресеты дозаполнятся, если пользователь их удалил.
+   */
+  async ensureDefaultHomeCategories(userId: string): Promise<void> {
+    await this.prisma.homeCategory.createMany({
+      skipDuplicates: true,
+      data: DEFAULT_HOME_CATEGORIES.map((c) => ({
+        userId,
+        label: c.label,
+        shortLabel: c.shortLabel,
+        iconKey: c.iconKey,
+        sortOrder: c.sortOrder,
+      })),
+    });
+  }
+
   async createUser(
     telegramId: number,
     firstName: string,
@@ -27,7 +45,7 @@ export class UsersService {
     timezone?: string,
   ): Promise<User> {
     try {
-      return await this.prisma.user.create({
+      const user = await this.prisma.user.create({
         data: {
           telegramId: BigInt(telegramId),
           firstName,
@@ -36,6 +54,8 @@ export class UsersService {
           timezone,
         },
       });
+      await this.ensureDefaultHomeCategories(user.id);
+      return user;
     } catch (e) {
       if (
         e instanceof Prisma.PrismaClientKnownRequestError &&
@@ -82,7 +102,7 @@ export class UsersService {
     username?: string,
     timezone?: string,
   ): Promise<User> {
-    return this.prisma.user.upsert({
+    const user = await this.prisma.user.upsert({
       where: { telegramId: BigInt(telegramId) },
       update: {
         firstName,
@@ -98,6 +118,8 @@ export class UsersService {
         timezone,
       },
     });
+    await this.ensureDefaultHomeCategories(user.id);
+    return user;
   }
 
   async updateUser(id: string, data: UpdateUserData): Promise<User> {

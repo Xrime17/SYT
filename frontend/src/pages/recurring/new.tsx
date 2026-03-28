@@ -8,7 +8,7 @@ import { Layout } from '@/components/Layout';
 import { Button } from '@/components/Button';
 import { useUser } from '@/context/UserContext';
 import useSWR from 'swr';
-import { getTasks, type Task } from '@/api/tasks';
+import { fetchTasksListForSwrKey, tasksListSwrKey, type Task } from '@/api/tasks';
 import { createRecurring } from '@/api/recurring';
 
 const FREQUENCIES = [
@@ -40,9 +40,9 @@ export default function NewRecurringPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { data: tasks = [] } = useSWR<Task[]>(
-    user?.id ? ['tasks', user.id] : null,
-    () => getTasks(user!.id),
+  const { data: tasks = [] } = useSWR(
+    user?.id ? tasksListSwrKey(user.id, null) : null,
+    fetchTasksListForSwrKey,
     { revalidateOnFocus: true }
   );
 

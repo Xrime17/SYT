@@ -48,8 +48,38 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  tasks        Task[]
-  completions  TaskCompletion[]
+  tasks          Task[]
+  completions    TaskCompletion[]
+  homeCategories HomeCategory[]
+}
+
+/// Категория для полосы чипов на Home (аналог habit/category strip в HomeScreen).
+/// Счётчик «habits» в подзаголовке Home = число записей пользователя (`GET /categories/home-metrics` → totalHabits), без отдельной модели Habit.
+model HomeCategory {
+  /// Первичный ключ записи.
+  id          String   @id @default(uuid())
+  /// Владелец; у одного пользователя много категорий.
+  userId      String
+  /// Полная подпись (a11y, будущие подсказки, списки).
+  label       String
+  /// Короткий текст на круглом чипе (как Wa / Re на текущем frontend).
+  shortLabel  String
+  /// Стабильный ключ для маппинга иконки на клиенте (water, reading, …; для кастомных — свой slug).
+  iconKey     String
+  /// Опциональный emoji; если задан, клиент может показать его вместо/вместе с иконкой.
+  emoji       String?
+  /// Порядок слева направо в полосе (меньше — раньше).
+  sortOrder   Int      @default(0)
+  /// Время создания строки (аудит, сортировка «как добавляли»).
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, iconKey])
+  @@index([userId])
+  @@index([userId, sortOrder])
+
+  tasks Task[]
 }
 
 model Task {
@@ -61,20 +91,25 @@ model Task {
   status            TaskStatus      @default(ACTIVE)
   priority          Priority        @default(MEDIUM)
   dueDate           DateTime?
+  /// Опциональная категория Home; null — без категории (старые задачи и сброс).
+  categoryId        String?
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
   recurringRuleId   String?
   generatedDate     DateTime?
 
   user              User            @relation(fields: [userId], references: [id])
+  homeCategory      HomeCategory?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   completions       TaskCompletion[]
   generatedByRule   RecurringRule?   @relation("GeneratedByRule", fields: [recurringRuleId], references: [id])
   recurring         RecurringRule?   @relation("TemplateTask")
-  reminders         Reminder[]
+  /// Не более одной строки `Reminder` на задачу (см. комментарий у модели Reminder).
+  reminder          Reminder?
 
   @@unique([recurringRuleId, generatedDate])
   @@index([userId])
   @@index([recurringRuleId])
+  @@index([categoryId])
 }
 
 model TaskCompletion {
@@ -102,15 +137,18 @@ model RecurringRule {
   generatedTasks Task[]     @relation("GeneratedByRule")
 }
 
+/// Ровно одно напоминание на задачу: колокольчик Home, /reminders и /remind в Telegram
+/// делят одну строку (upsert по taskId). Конфликт: при нескольких старых строках миграция
+/// оставляет одну (приоритет unsent, затем меньший id). После отправки sent=true — колокольчик
+/// «выкл» до следующего включения (новый remindAt + sent=false через upsert).
 model Reminder {
   id        String   @id @default(uuid())
-  taskId    String
+  taskId    String   @unique
   remindAt  DateTime
   sent      Boolean  @default(false)
 
-  task      Task     @relation(fields: [taskId], references: [id])
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
-  @@index([taskId])
   @@index([remindAt])
   @@index([sent])
 }

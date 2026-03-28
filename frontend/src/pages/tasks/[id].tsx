@@ -76,7 +76,11 @@ export default function EditTaskPage() {
           type: taskType,
           dueDate: dueDate || null,
         });
-        await mutate(['tasks', user.id]);
+        await mutate(
+          (key) => Array.isArray(key) && key[0] === 'tasks' && key[1] === user.id,
+          undefined,
+          { revalidate: true }
+        );
         router.push('/tasks');
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Ошибка');

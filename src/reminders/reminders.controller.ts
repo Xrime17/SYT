@@ -8,11 +8,17 @@ import {
   Post,
 } from '@nestjs/common';
 import { CreateReminderDto } from './dto/create-reminder.dto';
+import { SetQuickReminderDto } from './dto/set-quick-reminder.dto';
 import { RemindersService } from './reminders.service';
 
 @Controller('reminders')
 export class RemindersController {
   constructor(private readonly remindersService: RemindersService) {}
+
+  @Post('quick')
+  setQuick(@Body() dto: SetQuickReminderDto) {
+    return this.remindersService.setQuickReminder(dto.taskId, dto.userId, dto.enabled);
+  }
 
   @Post()
   create(@Body() dto: CreateReminderDto) {

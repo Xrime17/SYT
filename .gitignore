@@ -1,5 +1,6 @@
 dist
 node_modules
+.venv/
 .env
 npm-debug.log*
 pnpm-lock.yaml

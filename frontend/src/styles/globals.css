@@ -35,6 +35,7 @@
   --syt-glass-bg: rgba(255, 255, 255, 0.7);
   --syt-glass-border: rgba(255, 255, 255, 0.5);
   --syt-glass-blur: 12px;
+  --syt-overlay-backdrop: rgba(15, 23, 42, 0.55);
 }
 
 .dark,
@@ -55,6 +56,7 @@
   --syt-glass-bg: rgba(255, 255, 255, 0.05);
   --syt-glass-border: rgba(255, 255, 255, 0.08);
   --syt-glass-blur: 20px;
+  --syt-overlay-backdrop: rgba(0, 0, 0, 0.6);
 }
 
 @theme inline {
@@ -105,3 +107,35 @@ main {
 .animate-in-delay-1 { animation-delay: 0.05s; opacity: 0; }
 .animate-in-delay-2 { animation-delay: 0.1s; opacity: 0; }
 .animate-in-delay-3 { animation-delay: 0.15s; opacity: 0; }
+
+/* Radix Accordion (Home / SytAccordion) — высота из переменной задаёт сам Radix */
+@keyframes syt-accordion-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+  }
+}
+@keyframes syt-accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
+.syt-accordion-content[data-state='open'] {
+  animation: syt-accordion-down 0.2s ease-out;
+}
+.syt-accordion-content[data-state='closed'] {
+  animation: syt-accordion-up 0.2s ease-out;
+}
+
+.syt-accordion-trigger[data-state='open'] .syt-accordion-chevron {
+  transform: rotate(180deg);
+}
+.syt-accordion-chevron {
+  transition: transform 0.2s ease;
+}

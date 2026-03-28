@@ -4,14 +4,14 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 
 /**
- * Главная — редирект на список задач (Tasks list screen).
- * В будущем можно заменить на отдельный Home screen из Figma (connecting, logged in и т.д.).
+ * Корень приложения: редирект на продуктовый Home (`/home`).
+ * Сам экран Home — `pages/home.tsx` (IA под Home.make).
  */
-export default function Home() {
+export default function IndexPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace('/tasks');
+    router.replace('/home');
   }, [router]);
 
   return null;

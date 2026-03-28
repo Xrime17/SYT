@@ -11,7 +11,7 @@ import {
   deleteReminder,
   type Reminder,
 } from '@/api/reminders';
-import { getTasks, type Task } from '@/api/tasks';
+import { fetchTasksListForSwrKey, tasksListSwrKey, type Task } from '@/api/tasks';
 
 export default function RemindersPage() {
   const { user } = useUser();
@@ -27,9 +27,9 @@ export default function RemindersPage() {
     { revalidateOnFocus: true }
   );
 
-  const { data: tasks = [] } = useSWR<Task[]>(
-    user?.id ? ['tasks', user.id] : null,
-    () => getTasks(user!.id),
+  const { data: tasks = [] } = useSWR(
+    user?.id ? tasksListSwrKey(user.id, null) : null,
+    fetchTasksListForSwrKey,
     { revalidateOnFocus: true }
   );
 

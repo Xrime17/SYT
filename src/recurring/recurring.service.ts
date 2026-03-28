@@ -10,7 +10,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 type RecurringRuleWithTask = RecurringRule & {
   task: Pick<Task, 'userId' | 'title' | 'description' | 'type' | 'priority' | 'createdAt'> & {
-    reminders: { remindAt: Date }[];
+    reminder: { remindAt: Date } | null;
   };
 };
 
@@ -206,7 +206,7 @@ export class RecurringService {
         OR: [{ endDate: null }, { endDate: { gte: startOfToday } }],
       },
       include: {
-        task: { include: { reminders: true } },
+        task: { include: { reminder: true } },
       },
     });
     const rules: RecurringRuleWithTask[] = rulesRaw as RecurringRuleWithTask[];
@@ -218,7 +218,7 @@ export class RecurringService {
       if (!this.shouldGenerateToday(rule, startOfToday)) continue;
 
       const template = rule.task as RecurringRuleWithTask['task'];
-      const reminders = template.reminders || [];
+      const templateReminder = template.reminder;
 
       try {
         await this.prisma.$transaction(async (tx) => {
@@ -236,8 +236,8 @@ export class RecurringService {
             },
           });
 
-          for (const rem of reminders) {
-            const reminderTime = new Date(rem.remindAt);
+          if (templateReminder) {
+            const reminderTime = new Date(templateReminder.remindAt);
             const remindAt = new Date(
               Date.UTC(
                 startOfToday.getUTCFullYear(),

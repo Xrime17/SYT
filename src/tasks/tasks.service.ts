@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma, Priority, Task, TaskType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -8,17 +12,34 @@ export type UpdateTaskData = {
   status?: Task['status'];
   priority?: Task['priority'];
   dueDate?: Date | null;
+  /** `null` — явно снять категорию. */
+  categoryId?: string | null;
 };
 
 export type CreateTaskOptions = {
   dueDate?: Date | null;
   priority?: Priority;
   type?: TaskType;
+  categoryId?: string | null;
 };
 
 @Injectable()
 export class TasksService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private async assertHomeCategoryOwnedByUser(
+    categoryId: string,
+    userId: string,
+  ): Promise<void> {
+    const row = await this.prisma.homeCategory.findFirst({
+      where: { id: categoryId, userId },
+    });
+    if (!row) {
+      throw new BadRequestException(
+        'categoryId is invalid or does not belong to this user',
+      );
+    }
+  }
 
   /** Clamp dueDate: past → today start-of-day, beyond +1 year → max. null/undefined pass through. */
   private clampDueDate(d: Date | null | undefined): Date | null | undefined {
@@ -39,6 +60,9 @@ export class TasksService {
   ): Promise<Task> {
     try {
       const clampedDue = this.clampDueDate(options?.dueDate);
+      if (options?.categoryId) {
+        await this.assertHomeCategoryOwnedByUser(options.categoryId, userId);
+      }
       return await this.prisma.task.create({
         data: {
           userId,
@@ -47,6 +71,8 @@ export class TasksService {
           ...(clampedDue !== undefined && { dueDate: clampedDue }),
           ...(options?.priority !== undefined && { priority: options.priority }),
           ...(options?.type !== undefined && { type: options.type }),
+          ...(options?.categoryId !== undefined &&
+            options.categoryId !== null && { categoryId: options.categoryId }),
         },
       });
     } catch (e) {
@@ -117,13 +143,26 @@ export class TasksService {
     }
   }
 
+  /**
+   * Список задач пользователя. Опционально: день (`date` + tz) и/или `categoryId` (категория Home).
+   * Фильтр по категории сужает выборку; группировка `groupTasksForHome` на клиенте остаётся корректной,
+   * т.к. это те же правила bucket’ов, применённые к подмножеству задач.
+   */
   async getTasks(
     userId: string,
     date?: string,
     timezone?: string,
     timezoneOffsetMinutes?: number,
+    categoryId?: string,
   ): Promise<Task[]> {
     const where: Prisma.TaskWhereInput = { userId };
+
+    const cat = categoryId?.trim();
+    if (cat) {
+      await this.assertHomeCategoryOwnedByUser(cat, userId);
+      where.categoryId = cat;
+    }
+
     if (date) {
       const range = this.getDayRangeInTimezone(date, timezone, timezoneOffsetMinutes);
       if (range) {
@@ -133,6 +172,7 @@ export class TasksService {
         ];
       }
     }
+
     return this.prisma.task.findMany({
       where,
       orderBy: { createdAt: 'desc' },
@@ -154,6 +194,18 @@ export class TasksService {
     data: UpdateTaskData,
   ): Promise<Task> {
     try {
+      const existing = await this.prisma.task.findUnique({
+        where: { id: taskId },
+      });
+      if (!existing) {
+        throw new NotFoundException(`Task with id ${taskId} not found`);
+      }
+      if (data.categoryId !== undefined && data.categoryId !== null) {
+        await this.assertHomeCategoryOwnedByUser(
+          data.categoryId,
+          existing.userId,
+        );
+      }
       const clampedDue = data.dueDate !== undefined ? this.clampDueDate(data.dueDate) : undefined;
       return await this.prisma.task.update({
         where: { id: taskId },
@@ -166,6 +218,9 @@ export class TasksService {
           ...(data.priority !== undefined && { priority: data.priority }),
           ...(clampedDue !== undefined && {
             dueDate: clampedDue === null ? null : clampedDue,
+          }),
+          ...(data.categoryId !== undefined && {
+            categoryId: data.categoryId,
           }),
         },
       });

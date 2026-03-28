@@ -9,7 +9,13 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { PriorityBadge, type Priority } from '@/components/PriorityBadge';
 import { useUser } from '@/context/UserContext';
-import { getTasks, updateTask, deleteTask, type Task } from '@/api/tasks';
+import {
+  fetchTasksListForSwrKey,
+  tasksListSwrKey,
+  updateTask,
+  deleteTask,
+  type Task,
+} from '@/api/tasks';
 
 const OpenInTelegramCard = dynamic(
   () => import('@/components/OpenInTelegramCard').then((m) => m.OpenInTelegramCard),
@@ -33,8 +39,8 @@ export default function TasksPage() {
   const [mutateError, setMutateError] = useState<string | null>(null);
 
   const { data: tasks = [], error: fetchError, isLoading, mutate } = useSWR(
-    user?.id ? ['tasks', user.id] : null,
-    ([, userId]) => getTasks(userId),
+    user?.id ? tasksListSwrKey(user.id, null) : null,
+    fetchTasksListForSwrKey,
     {
       revalidateOnFocus: true,
       focusThrottleInterval: 60 * 1000,

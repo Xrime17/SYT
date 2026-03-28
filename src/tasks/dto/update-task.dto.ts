@@ -3,8 +3,10 @@ import {
   IsEnum,
   IsOptional,
   IsString,
+  IsUUID,
   MaxLength,
   MinLength,
+  ValidateIf,
 } from 'class-validator';
 import { Priority, TaskStatus, TaskType } from '@prisma/client';
 
@@ -35,4 +37,10 @@ export class UpdateTaskDto {
   @IsOptional()
   @IsDateString({}, { message: 'dueDate must be a valid ISO 8601 date string' })
   dueDate?: string;
+
+  /** Сменить категорию Home; `null` в JSON — снять категорию. */
+  @IsOptional()
+  @ValidateIf((_, v) => v !== null && v !== undefined)
+  @IsUUID('4', { message: 'categoryId must be a valid UUID' })
+  categoryId?: string | null;
 }

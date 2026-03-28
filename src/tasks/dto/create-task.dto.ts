@@ -4,6 +4,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
   MaxLength,
   MinLength,
 } from 'class-validator';
@@ -36,4 +37,9 @@ export class CreateTaskDto {
   @IsOptional()
   @IsDateString({}, { message: 'dueDate must be a valid ISO 8601 date string' })
   dueDate?: string;
+
+  /** FK на `HomeCategory` того же пользователя; опционально. */
+  @IsOptional()
+  @IsUUID('4', { message: 'categoryId must be a valid UUID' })
+  categoryId?: string;
 }

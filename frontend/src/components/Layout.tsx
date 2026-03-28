@@ -5,16 +5,32 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useUser } from '@/context/UserContext';
 
+/**
+ * Продуктовый chrome Telegram Mini App (Syt): шапка + нижний таббар на мобиле.
+ *
+ * Порядок табов: Home → Tracker → Tasks → Recurring → Reminders (`/home`, `/tracker`, …).
+ * Это не навигация демо UI Kit в `ai-system/` (там отдельные вкладки вроде Tokens / Basic / Screens).
+ */
+
 /** In Telegram Mini App, apply Telegram theme to body so content is visible (no random black). */
 function useTelegramTheme() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const bg = window.Telegram?.WebApp?.themeParams?.bg_color;
+    const tg = window.Telegram?.WebApp;
+    const bg = tg?.themeParams?.bg_color;
     if (!bg) return;
+
     const prev = document.body.style.background;
     document.body.style.background = bg;
+
+    const isDark = tg?.colorScheme === 'dark';
+    const root = document.documentElement;
+    const hadDark = root.classList.contains('dark');
+    if (isDark) root.classList.add('dark');
+
     return () => {
       document.body.style.background = prev;
+      if (!hadDark) root.classList.remove('dark');
     };
   }, []);
 }
@@ -63,7 +79,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="mx-auto flex h-14 max-w-2xl items-center justify-between gap-3 px-4">
           <div className="flex items-center gap-3 min-w-0">
             <Link
-              href="/"
+              href="/home"
               className="font-bold text-lg text-[var(--syt-text)] truncate shrink-0"
             >
               Syt
@@ -73,13 +89,22 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </span>
           </div>
           <nav className="hidden sm:flex items-center gap-1">
+            <NavLink href="/home" active={pathname === '/home'}>
+              Home
+            </NavLink>
             <NavLink href="/tracker" active={pathname === '/tracker'}>
               Tracker
             </NavLink>
-            <NavLink href="/tasks" active={pathname === '/tasks'}>
+            <NavLink
+              href="/tasks"
+              active={pathname === '/tasks' || pathname.startsWith('/tasks/')}
+            >
               Tasks
             </NavLink>
-            <NavLink href="/recurring" active={pathname === '/recurring'}>
+            <NavLink
+              href="/recurring"
+              active={pathname === '/recurring' || pathname.startsWith('/recurring/')}
+            >
               Recurring
             </NavLink>
             <NavLink href="/reminders" active={pathname === '/reminders'}>
@@ -135,60 +160,79 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <nav className="fixed bottom-0 left-0 right-0 z-20 sm:hidden h-[52px] bg-[var(--syt-surface)] border-t border-[var(--syt-border)] safe-area-pb">
         <div className="flex justify-around items-center h-full max-w-[640px] mx-auto">
           <Link
+            href="/home"
+            className={`flex flex-col items-center justify-center flex-1 py-2 text-[11px] gap-0.5 min-w-0 ${
+              pathname === '/home'
+                ? 'text-[var(--syt-accent)] font-semibold'
+                : 'text-[var(--syt-text-secondary)]'
+            }`}
+            aria-current={pathname === '/home' ? 'page' : undefined}
+          >
+            <svg className="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"
+              />
+            </svg>
+            <span className="truncate max-w-full px-0.5">Home</span>
+          </Link>
+          <Link
             href="/tracker"
-            className={`flex flex-col items-center justify-center flex-1 py-2 text-[11px] gap-0.5 ${
+            className={`flex flex-col items-center justify-center flex-1 py-2 text-[11px] gap-0.5 min-w-0 ${
               pathname === '/tracker'
                 ? 'text-[var(--syt-accent)] font-semibold'
                 : 'text-[var(--syt-text-secondary)]'
             }`}
             aria-current={pathname === '/tracker' ? 'page' : undefined}
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
-            Tracker
+            <span className="truncate max-w-full px-0.5">Tracker</span>
           </Link>
           <Link
             href="/tasks"
-            className={`flex flex-col items-center justify-center flex-1 py-2 text-[11px] gap-0.5 ${
+            className={`flex flex-col items-center justify-center flex-1 py-2 text-[11px] gap-0.5 min-w-0 ${
               pathname === '/tasks' || pathname.startsWith('/tasks/')
                 ? 'text-[var(--syt-accent)] font-semibold'
                 : 'text-[var(--syt-text-secondary)]'
             }`}
             aria-current={pathname.startsWith('/tasks') ? 'page' : undefined}
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
             </svg>
-            Tasks
+            <span className="truncate max-w-full px-0.5">Tasks</span>
           </Link>
           <Link
             href="/recurring"
-            className={`flex flex-col items-center justify-center flex-1 py-2 text-[11px] gap-0.5 ${
+            className={`flex flex-col items-center justify-center flex-1 py-2 text-[11px] gap-0.5 min-w-0 ${
               pathname === '/recurring' || pathname.startsWith('/recurring/')
                 ? 'text-[var(--syt-accent)] font-semibold'
                 : 'text-[var(--syt-text-secondary)]'
             }`}
             aria-current={pathname.startsWith('/recurring') ? 'page' : undefined}
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            Recurring
+            <span className="truncate max-w-full px-0.5">Recurring</span>
           </Link>
           <Link
             href="/reminders"
-            className={`flex flex-col items-center justify-center flex-1 py-2 text-[11px] gap-0.5 ${
+            className={`flex flex-col items-center justify-center flex-1 py-2 text-[11px] gap-0.5 min-w-0 ${
               pathname === '/reminders'
                 ? 'text-[var(--syt-accent)] font-semibold'
                 : 'text-[var(--syt-text-secondary)]'
             }`}
             aria-current={pathname === '/reminders' ? 'page' : undefined}
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
-            Reminders
+            <span className="truncate max-w-full px-0.5">Reminders</span>
           </Link>
         </div>
       </nav>

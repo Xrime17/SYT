@@ -8,6 +8,7 @@ import { RecurringModule } from './recurring/recurring.module';
 import { RemindersModule } from './reminders/reminders.module';
 import { HealthModule } from './health/health.module';
 import { TelegramModule } from './telegram/telegram.module';
+import { CategoriesModule } from './categories/categories.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { TelegramModule } from './telegram/telegram.module';
     RemindersModule,
     HealthModule,
     TelegramModule,
+    CategoriesModule,
   ],
 })
 export class AppModule {}
