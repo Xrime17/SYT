@@ -24,11 +24,10 @@ COPY --from=builder /app/package.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
-COPY scripts/docker-start.sh /app/docker-start.sh
-RUN chmod +x /app/docker-start.sh
 
 EXPOSE 3000
 
-# Локальный Docker / fallback; на Railway приоритет у `deploy.startCommand` в railway.toml
-CMD ["/app/docker-start.sh"]
+# Явно через sh — не вызывать .sh напрямую (CRLF/shebang в CI даёт «No such file or directory»).
+# Railway: дублируется в railway.toml startCommand.
+CMD ["sh", "-c", "npx prisma migrate deploy && exec node dist/main.js"]
 
