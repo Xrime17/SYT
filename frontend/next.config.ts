@@ -12,51 +12,41 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ["@/components", "@/api", "@/hooks", "@/context"],
   },
   async headers() {
+    // HTML страниц не кэшируем агрессивно: Telegram WebView + edge иначе долго держат старый бандл после деплоя.
+    const docNoStore = [
+      { key: "Cache-Control", value: "private, no-cache, no-store, must-revalidate" },
+    ] as const;
     return [
-      {
-        source: "/",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, s-maxage=86400, stale-while-revalidate=300",
-          },
-        ],
-      },
+      { source: "/", headers: [...docNoStore] },
+      { source: "/home", headers: [...docNoStore] },
+      { source: "/settings", headers: [...docNoStore] },
       {
         source: "/tasks",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, s-maxage=300, stale-while-revalidate=60",
-          },
-        ],
+        headers: [...docNoStore],
       },
       {
         source: "/tasks/new",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, s-maxage=300, stale-while-revalidate=60",
-          },
-        ],
+        headers: [...docNoStore],
+      },
+      {
+        source: "/tasks/:path*",
+        headers: [...docNoStore],
       },
       {
         source: "/recurring",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, s-maxage=300, stale-while-revalidate=60",
-          },
-        ],
+        headers: [...docNoStore],
+      },
+      {
+        source: "/recurring/new",
+        headers: [...docNoStore],
       },
       {
         source: "/reminders",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, s-maxage=300, stale-while-revalidate=60",
-          },
-        ],
+        headers: [...docNoStore],
+      },
+      {
+        source: "/tracker",
+        headers: [...docNoStore],
       },
       {
         source: "/_next/static/:path*",
