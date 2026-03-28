@@ -1,0 +1,10 @@
+# Перекрывает Start Command из UI (иначе после одного только `migrate` контейнер выходит → 502).
+# Для сервиса только с этим репо / корнем backend. Отдельный frontend-сервис: свой root или без этого файла.
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "/app/docker-start.sh"
+healthcheckPath = "/health"
+healthcheckTimeout = 120
