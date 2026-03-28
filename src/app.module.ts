@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
+import { NoStoreHttpCacheInterceptor } from './common/no-store-http-cache.interceptor';
 import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaModule } from './prisma/prisma.module';
 import { UsersModule } from './users/users.module';
@@ -24,6 +26,9 @@ import { CategoriesModule } from './categories/categories.module';
     HealthModule,
     TelegramModule,
     CategoriesModule,
+  ],
+  providers: [
+    { provide: APP_INTERCEPTOR, useClass: NoStoreHttpCacheInterceptor },
   ],
 })
 export class AppModule {}
