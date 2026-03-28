@@ -10,6 +10,7 @@ import { AppModule } from './app.module';
   };
 
 async function bootstrap() {
+  console.log('[syt] bootstrap: PORT=', process.env.PORT ?? '(unset, default 3000)');
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({ origin: true }); // allow localhost (dev)
@@ -22,10 +23,10 @@ async function bootstrap() {
   );
 
   const configService = app.get(ConfigService);
-  const port = configService.get<number>('PORT') ?? 3000;
-
-  await app.listen(port);
-  console.log(`Application is running on: http://localhost:${port}`);
+  const port = Number(configService.get('PORT')) || 3000;
+  // Railway/Docker: слушать все интерфейсы, иначе прокси часто даёт 502
+  await app.listen(port, '0.0.0.0');
+  console.log(`Application is running on: http://0.0.0.0:${port}`);
 }
 
 bootstrap();
