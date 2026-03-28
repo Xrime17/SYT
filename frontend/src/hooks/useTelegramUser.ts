@@ -125,7 +125,7 @@ export function useTelegramUser() {
 
       // Wake up Railway (or any sleeping backend) with a cheap request so get-or-create is faster.
       try {
-        fetch(`${API_BASE}/health`, { method: 'GET', cache: 'no-store' }).catch(() => {});
+        fetch(`${API_BASE}/health`, { method: 'GET' }).catch(() => {});
       } catch {
         // ignore
       }

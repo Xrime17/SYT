@@ -23,7 +23,6 @@ async function request<T>(
       ...init,
       signal: controller.signal,
       headers: mergedHeaders,
-      cache: 'no-store',
     });
   } catch (e) {
     clearTimeout(timeoutId);
