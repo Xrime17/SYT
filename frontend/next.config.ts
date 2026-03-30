@@ -12,13 +12,33 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ["@/components", "@/api", "@/hooks", "@/context"],
   },
   async headers() {
+    // Telegram WebView can aggressively cache HTML. Keep page shells no-store so updates are visible.
+    const noStoreHtml = "no-store, no-cache, must-revalidate, max-age=0";
     return [
       {
         source: "/",
         headers: [
           {
             key: "Cache-Control",
-            value: "public, s-maxage=86400, stale-while-revalidate=300",
+            value: noStoreHtml,
+          },
+        ],
+      },
+      {
+        source: "/home",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: noStoreHtml,
+          },
+        ],
+      },
+      {
+        source: "/tracker",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: noStoreHtml,
           },
         ],
       },
@@ -27,7 +47,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: "public, s-maxage=300, stale-while-revalidate=60",
+            value: noStoreHtml,
           },
         ],
       },
@@ -36,7 +56,16 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: "public, s-maxage=300, stale-while-revalidate=60",
+            value: noStoreHtml,
+          },
+        ],
+      },
+      {
+        source: "/tasks/:id",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: noStoreHtml,
           },
         ],
       },
@@ -45,7 +74,16 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: "public, s-maxage=300, stale-while-revalidate=60",
+            value: noStoreHtml,
+          },
+        ],
+      },
+      {
+        source: "/recurring/new",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: noStoreHtml,
           },
         ],
       },
@@ -54,7 +92,16 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: "public, s-maxage=300, stale-while-revalidate=60",
+            value: noStoreHtml,
+          },
+        ],
+      },
+      {
+        source: "/settings",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: noStoreHtml,
           },
         ],
       },

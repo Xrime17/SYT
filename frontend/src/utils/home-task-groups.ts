@@ -77,10 +77,20 @@ export function groupHomeLists(tasks: Task[], now: Date = new Date()): Record<Ho
 
     if (task.status === 'COMPLETED') {
       const updStr = toDateStrLocal(new Date(task.updatedAt));
+      // Manual flow:
+      // - If a task was completed, but its dueDate is still Today/Tomorrow, keep it in that bucket
+      //   (with strikethrough in UI).
+      // - After the due day ends, it moves into "Completed this week"
+      //   based on completion time (updatedAt in absence of completedAt in API).
       if (due === todayStr) {
         buckets.today.push(task);
         continue;
       }
+      if (due === tomorrowStr) {
+        buckets.tomorrow.push(task);
+        continue;
+      }
+
       if (updStr >= weekStartStr && updStr <= weekEndStr) {
         buckets.completedThisWeek.push(task);
       }
