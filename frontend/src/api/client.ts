@@ -1,3 +1,5 @@
+import { CACHE_DISABLED } from '@/config';
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
 const API_TIMEOUT_MS = 15000;
 
@@ -23,6 +25,7 @@ async function request<T>(
       ...init,
       signal: controller.signal,
       headers: mergedHeaders,
+      ...(CACHE_DISABLED ? { cache: 'no-store' as const } : {}),
     });
   } catch (e) {
     clearTimeout(timeoutId);
