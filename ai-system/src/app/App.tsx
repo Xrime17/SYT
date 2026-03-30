@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 import {
   CheckCircle2,
   ListTodo,
@@ -20,160 +20,134 @@ import {
   FileText,
   Home,
   CalendarDays,
-} from 'lucide-react';
+} from "lucide-react";
 
 // UI Kit Components - Basic
-import { Button } from './components/syt/Button';
-import { Input, Textarea } from './components/syt/Input';
-import { Checkbox, Toggle } from './components/syt/Checkbox';
-import { Badge, PriorityBadge, StatusBadge, FrequencyBadge } from './components/syt/Badge';
-import { TaskCard, RecurringCard } from './components/syt/TaskCard';
-import { FilterChip, FilterGroup } from './components/syt/FilterChip';
-import { BottomNav } from './components/syt/BottomNav';
-import { ProductBottomNav } from './components/syt/ProductBottomNav';
-import { AppHeader } from './components/syt/AppHeader';
-import { EmptyState } from './components/syt/EmptyState';
-import { LoadingState, TaskCardSkeleton } from './components/syt/LoadingState';
+import { Button } from "./components/syt/Button";
+import { Input, Textarea } from "./components/syt/Input";
+import { Checkbox, Toggle } from "./components/syt/Checkbox";
+import {
+  Badge,
+  PriorityBadge,
+  StatusBadge,
+  FrequencyBadge,
+} from "./components/syt/Badge";
+import {
+  TaskCard,
+  RecurringCard,
+} from "./components/syt/TaskCard";
+import {
+  FilterChip,
+  FilterGroup,
+} from "./components/syt/FilterChip";
+import { BottomNav } from "./components/syt/BottomNav";
+import { ProductBottomNav } from "./components/syt/ProductBottomNav";
+import { AppHeader } from "./components/syt/AppHeader";
+import { EmptyState } from "./components/syt/EmptyState";
+import {
+  LoadingState,
+  TaskCardSkeleton,
+} from "./components/syt/LoadingState";
 
 // UI Kit Components - Advanced
-import { Modal, BottomSheet } from './components/syt/Modal';
-import { Tabs } from './components/syt/Tabs';
-import { SegmentedControl } from './components/syt/SegmentedControl';
-import { FloatingActionButton } from './components/syt/FloatingActionButton';
-import { Toaster, toast } from './components/syt/Toast';
-import { Alert } from './components/syt/Alert';
-import { ConfirmDialog } from './components/syt/ConfirmDialog';
-import { ProgressBar, CircularProgress, StreakIndicator, CompletionStats } from './components/syt/Progress';
-import { SwipeActions, TaskSwipeActions } from './components/syt/SwipeActions';
-import { CalendarStrip } from './components/syt/CalendarStrip';
-import { Divider } from './components/syt/Divider';
-import { DragHandle } from './components/syt/DragHandle';
-import { TaskListItem } from './components/syt/TaskListItem';
-import { Icons } from './components/syt/Icons';
+import { Modal, BottomSheet } from "./components/syt/Modal";
+import { Tabs } from "./components/syt/Tabs";
+import { SegmentedControl } from "./components/syt/SegmentedControl";
+import { FloatingActionButton } from "./components/syt/FloatingActionButton";
+import { Toaster, toast } from "./components/syt/Toast";
+import { Alert } from "./components/syt/Alert";
+import { ConfirmDialog } from "./components/syt/ConfirmDialog";
+import {
+  ProgressBar,
+  CircularProgress,
+  StreakIndicator,
+  CompletionStats,
+} from "./components/syt/Progress";
+import {
+  SwipeActions,
+  TaskSwipeActions,
+} from "./components/syt/SwipeActions";
+import { CalendarStrip } from "./components/syt/CalendarStrip";
+import { Divider } from "./components/syt/Divider";
+import { DragHandle } from "./components/syt/DragHandle";
+import { TaskListItem } from "./components/syt/TaskListItem";
+import { Icons } from "./components/syt/Icons";
 
 // Screens
-import { TaskDetailsScreen } from './components/screens/TaskDetailsScreen';
-import { CreateTaskScreen } from './components/screens/CreateTaskScreen';
-import { StatsScreen } from './components/screens/StatsScreen';
-import { HomeScreen } from './components/screens/HomeScreen';
-import { TrackerScreen } from './components/screens/TrackerScreen';
-import { NewTaskForm } from './components/screens/NewTaskForm';
-
-// ─── Placeholder screens for unimplemented product tabs ──────────────────────
-function PlaceholderProductScreen({
-  title,
-  subtitle,
-  activeTab,
-  onNavigate,
-}: {
-  title: string;
-  subtitle: string;
-  activeTab: string;
-  onNavigate: (id: string) => void;
-}) {
-  return (
-    <div className="min-h-screen bg-syt-background pb-20 flex flex-col">
-      <header className="sticky top-0 z-10 bg-syt-background/80 backdrop-blur-lg border-b border-syt-border">
-        <div className="max-w-screen-sm mx-auto px-4 py-6">
-          <h1 className="mb-1">{title}</h1>
-          <p className="text-sm text-syt-text-secondary">{subtitle}</p>
-        </div>
-      </header>
-      <main className="flex-1 flex items-center justify-center px-4">
-        <EmptyState
-          icon={<SettingsIcon className="w-12 h-12" />}
-          title={`${title} coming soon`}
-          description="This screen is under construction. Navigate using the tabs below."
-        />
-      </main>
-      <ProductBottomNav activeId={activeTab} onItemClick={onNavigate} />
-    </div>
-  );
-}
-
-// ─── Product shell: manages all 5 product tabs in one place ──────────────────
-function ProductShell({ initialTab }: { initialTab: string }) {
-  const [activeTab, setActiveTab] = useState(initialTab);
-
-  if (activeTab === 'home') {
-    return <HomeScreen activeTab="home" onNavigate={setActiveTab} />;
-  }
-  if (activeTab === 'tracker') {
-    return <TrackerScreen activeTab="tracker" onNavigate={setActiveTab} />;
-  }
-  if (activeTab === 'tasks') {
-    return (
-      <PlaceholderProductScreen
-        title="Tasks"
-        subtitle="All your one-off tasks"
-        activeTab={activeTab}
-        onNavigate={setActiveTab}
-      />
-    );
-  }
-  if (activeTab === 'recurring') {
-    return (
-      <PlaceholderProductScreen
-        title="Recurring"
-        subtitle="Habits & recurring tasks"
-        activeTab={activeTab}
-        onNavigate={setActiveTab}
-      />
-    );
-  }
-  if (activeTab === 'reminders') {
-    return (
-      <PlaceholderProductScreen
-        title="Reminders"
-        subtitle="Your scheduled reminders"
-        activeTab={activeTab}
-        onNavigate={setActiveTab}
-      />
-    );
-  }
-  return null;
-}
+import { TaskDetailsScreen } from "./components/screens/TaskDetailsScreen";
+import { CreateTaskScreen } from "./components/screens/CreateTaskScreen";
+import { StatsScreen } from "./components/screens/StatsScreen";
+import { HomeScreen } from "./components/screens/HomeScreen";
+import { TrackerScreen } from "./components/screens/TrackerScreen";
+import { NewTaskForm } from "./components/screens/NewTaskForm";
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('design-system');
-  const [selectedFilter, setSelectedFilter] = useState<string[]>(['high']);
+  const [activeTab, setActiveTab] = useState("design-system");
+  const [selectedFilter, setSelectedFilter] = useState<
+    string[]
+  >(["high"]);
   const [showModal, setShowModal] = useState(false);
   const [showBottomSheet, setShowBottomSheet] = useState(false);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [showScreen, setShowScreen] = useState<string | null>(null);
+  const [showConfirmDialog, setShowConfirmDialog] =
+    useState(false);
+  const [showScreen, setShowScreen] = useState<string | null>(
+    null,
+  );
   const [showNewTaskForm, setShowNewTaskForm] = useState(false);
-  /** productTab — drives the 5-tab product shell; null = not in product shell */
-  const [productTab, setProductTab] = useState<string | null>(null);
 
-  // Demo sections (UI Kit shell — NOT the product nav)
+  // Demo sections (UI Kit shell)
   const sections = [
-    { id: 'design-system', label: 'Tokens',   icon: <Palette      className="w-5 h-5" /> },
-    { id: 'components',    label: 'Basic',    icon: <ClipboardList className="w-5 h-5" /> },
-    { id: 'advanced',      label: 'Advanced', icon: <Layers        className="w-5 h-5" /> },
-    { id: 'screens',       label: 'Screens',  icon: <FileText      className="w-5 h-5" /> },
+    {
+      id: "design-system",
+      label: "Tokens",
+      icon: <Palette className="w-5 h-5" />,
+    },
+    {
+      id: "components",
+      label: "Basic",
+      icon: <ClipboardList className="w-5 h-5" />,
+    },
+    {
+      id: "advanced",
+      label: "Advanced",
+      icon: <Layers className="w-5 h-5" />,
+    },
+    {
+      id: "screens",
+      label: "Screens",
+      icon: <FileText className="w-5 h-5" />,
+    },
+    {
+      id: "home",
+      label: "Home",
+      icon: <Home className="w-5 h-5" />,
+    },
   ];
 
   const toggleFilter = (filter: string) => {
     setSelectedFilter((prev) =>
-      prev.includes(filter) ? prev.filter((f) => f !== filter) : [...prev, filter]
+      prev.includes(filter)
+        ? prev.filter((f) => f !== filter)
+        : [...prev, filter],
     );
   };
 
-  // ── Product shell (Home / Tracker / Tasks / Recurring / Reminders) ────────
-  if (productTab !== null) {
-    return <ProductShell initialTab={productTab} />;
-  }
-
   // ── Other full-screen demos ────────────────────────────────────────────────
-  if (showScreen === 'task-details') {
-    return <TaskDetailsScreen onBack={() => setShowScreen(null)} />;
+  if (showScreen === "task-details") {
+    return (
+      <TaskDetailsScreen onBack={() => setShowScreen(null)} />
+    );
   }
-  if (showScreen === 'create-task') {
-    return <CreateTaskScreen onBack={() => setShowScreen(null)} />;
+  if (showScreen === "create-task") {
+    return (
+      <CreateTaskScreen onBack={() => setShowScreen(null)} />
+    );
   }
-  if (showScreen === 'stats') {
+  if (showScreen === "stats") {
     return <StatsScreen />;
   }
+
+  // ── Home Screen removed from here - now rendered inside main container ─────
 
   return (
     <div className="min-h-screen bg-syt-background pb-20">
@@ -191,22 +165,52 @@ export default function App() {
 
       <main className="max-w-screen-sm mx-auto px-4 py-6 space-y-8">
         {/* Design System Tab */}
-        {activeTab === 'design-system' && (
+        {activeTab === "design-system" && (
           <>
             {/* Color Tokens */}
             <section>
               <h2 className="mb-4">Base Colors</h2>
               <div className="grid grid-cols-2 gap-3">
-                <ColorSwatch name="Background" value="var(--syt-background)" />
-                <ColorSwatch name="Surface" value="var(--syt-surface)" />
-                <ColorSwatch name="Card" value="var(--syt-card)" />
-                <ColorSwatch name="Border" value="var(--syt-border)" />
-                <ColorSwatch name="Accent" value="var(--syt-accent)" />
-                <ColorSwatch name="Success" value="var(--syt-success)" />
-                <ColorSwatch name="Warning" value="var(--syt-warning)" />
-                <ColorSwatch name="Error" value="var(--syt-error)" />
-                <ColorSwatch name="Text" value="var(--syt-text)" />
-                <ColorSwatch name="Text Secondary" value="var(--syt-text-secondary)" />
+                <ColorSwatch
+                  name="Background"
+                  value="var(--syt-background)"
+                />
+                <ColorSwatch
+                  name="Surface"
+                  value="var(--syt-surface)"
+                />
+                <ColorSwatch
+                  name="Card"
+                  value="var(--syt-card)"
+                />
+                <ColorSwatch
+                  name="Border"
+                  value="var(--syt-border)"
+                />
+                <ColorSwatch
+                  name="Accent"
+                  value="var(--syt-accent)"
+                />
+                <ColorSwatch
+                  name="Success"
+                  value="var(--syt-success)"
+                />
+                <ColorSwatch
+                  name="Warning"
+                  value="var(--syt-warning)"
+                />
+                <ColorSwatch
+                  name="Error"
+                  value="var(--syt-error)"
+                />
+                <ColorSwatch
+                  name="Text"
+                  value="var(--syt-text)"
+                />
+                <ColorSwatch
+                  name="Text Secondary"
+                  value="var(--syt-text-secondary)"
+                />
               </div>
             </section>
 
@@ -214,10 +218,22 @@ export default function App() {
             <section>
               <h2 className="mb-4">Elevation Levels</h2>
               <div className="grid grid-cols-2 gap-3">
-                <ColorSwatch name="Surface 1" value="var(--syt-surface-1)" />
-                <ColorSwatch name="Surface 2" value="var(--syt-surface-2)" />
-                <ColorSwatch name="Surface 3" value="var(--syt-surface-3)" />
-                <ColorSwatch name="Overlay" value="var(--syt-overlay)" />
+                <ColorSwatch
+                  name="Surface 1"
+                  value="var(--syt-surface-1)"
+                />
+                <ColorSwatch
+                  name="Surface 2"
+                  value="var(--syt-surface-2)"
+                />
+                <ColorSwatch
+                  name="Surface 3"
+                  value="var(--syt-surface-3)"
+                />
+                <ColorSwatch
+                  name="Overlay"
+                  value="var(--syt-overlay)"
+                />
               </div>
             </section>
 
@@ -226,19 +242,27 @@ export default function App() {
               <h2 className="mb-4">Dividers</h2>
               <div className="bg-syt-card border border-syt-border rounded-xl p-4 space-y-4">
                 <div>
-                  <p className="text-xs text-syt-text-muted mb-2">Subtle</p>
+                  <p className="text-xs text-syt-text-muted mb-2">
+                    Subtle
+                  </p>
                   <Divider variant="subtle" />
                 </div>
                 <div>
-                  <p className="text-xs text-syt-text-muted mb-2">Default</p>
+                  <p className="text-xs text-syt-text-muted mb-2">
+                    Default
+                  </p>
                   <Divider variant="default" />
                 </div>
                 <div>
-                  <p className="text-xs text-syt-text-muted mb-2">Strong</p>
+                  <p className="text-xs text-syt-text-muted mb-2">
+                    Strong
+                  </p>
                   <Divider variant="strong" />
                 </div>
                 <div>
-                  <p className="text-xs text-syt-text-muted mb-2">With Label</p>
+                  <p className="text-xs text-syt-text-muted mb-2">
+                    With Label
+                  </p>
                   <Divider variant="default" label="Section" />
                 </div>
               </div>
@@ -248,8 +272,14 @@ export default function App() {
             <section>
               <h2 className="mb-4">Overlays & Backdrops</h2>
               <div className="grid grid-cols-2 gap-3">
-                <ColorSwatch name="Backdrop" value="var(--syt-backdrop)" />
-                <ColorSwatch name="Backdrop Blur" value="var(--syt-backdrop-blur)" />
+                <ColorSwatch
+                  name="Backdrop"
+                  value="var(--syt-backdrop)"
+                />
+                <ColorSwatch
+                  name="Backdrop Blur"
+                  value="var(--syt-backdrop-blur)"
+                />
               </div>
             </section>
 
@@ -290,8 +320,13 @@ export default function App() {
                 <h2>Section Title (H2)</h2>
                 <h3>Subsection (H3)</h3>
                 <h4>Card Title (H4)</h4>
-                <p>Body text with good readability and appropriate line height for mobile screens.</p>
-                <small className="block text-syt-text-muted">Caption text for timestamps and metadata</small>
+                <p>
+                  Body text with good readability and
+                  appropriate line height for mobile screens.
+                </p>
+                <small className="block text-syt-text-muted">
+                  Caption text for timestamps and metadata
+                </small>
               </div>
             </section>
 
@@ -301,19 +336,27 @@ export default function App() {
               <div className="bg-syt-card border border-syt-border rounded-xl p-4 space-y-2">
                 <div className="flex items-center gap-3">
                   <div className="w-2 h-2 bg-syt-accent rounded" />
-                  <span className="text-sm text-syt-text-secondary">8px (0.5rem)</span>
+                  <span className="text-sm text-syt-text-secondary">
+                    8px (0.5rem)
+                  </span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-4 h-4 bg-syt-accent rounded" />
-                  <span className="text-sm text-syt-text-secondary">16px (1rem)</span>
+                  <span className="text-sm text-syt-text-secondary">
+                    16px (1rem)
+                  </span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-6 h-6 bg-syt-accent rounded" />
-                  <span className="text-sm text-syt-text-secondary">24px (1.5rem)</span>
+                  <span className="text-sm text-syt-text-secondary">
+                    24px (1.5rem)
+                  </span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 bg-syt-accent rounded" />
-                  <span className="text-sm text-syt-text-secondary">32px (2rem)</span>
+                  <span className="text-sm text-syt-text-secondary">
+                    32px (2rem)
+                  </span>
                 </div>
               </div>
             </section>
@@ -322,17 +365,37 @@ export default function App() {
             <section>
               <h2 className="mb-4">Border Radius</h2>
               <div className="grid grid-cols-2 gap-3">
-                <div className="bg-syt-card border border-syt-border p-4" style={{ borderRadius: 'var(--radius-sm)' }}>
-                  <p className="text-xs text-syt-text-muted">Small (6px)</p>
+                <div
+                  className="bg-syt-card border border-syt-border p-4"
+                  style={{ borderRadius: "var(--radius-sm)" }}
+                >
+                  <p className="text-xs text-syt-text-muted">
+                    Small (6px)
+                  </p>
                 </div>
-                <div className="bg-syt-card border border-syt-border p-4" style={{ borderRadius: 'var(--radius-md)' }}>
-                  <p className="text-xs text-syt-text-muted">Medium (8px)</p>
+                <div
+                  className="bg-syt-card border border-syt-border p-4"
+                  style={{ borderRadius: "var(--radius-md)" }}
+                >
+                  <p className="text-xs text-syt-text-muted">
+                    Medium (8px)
+                  </p>
                 </div>
-                <div className="bg-syt-card border border-syt-border p-4" style={{ borderRadius: 'var(--radius-lg)' }}>
-                  <p className="text-xs text-syt-text-muted">Large (12px)</p>
+                <div
+                  className="bg-syt-card border border-syt-border p-4"
+                  style={{ borderRadius: "var(--radius-lg)" }}
+                >
+                  <p className="text-xs text-syt-text-muted">
+                    Large (12px)
+                  </p>
                 </div>
-                <div className="bg-syt-card border border-syt-border p-4" style={{ borderRadius: 'var(--radius-xl)' }}>
-                  <p className="text-xs text-syt-text-muted">X-Large (16px)</p>
+                <div
+                  className="bg-syt-card border border-syt-border p-4"
+                  style={{ borderRadius: "var(--radius-xl)" }}
+                >
+                  <p className="text-xs text-syt-text-muted">
+                    X-Large (16px)
+                  </p>
                 </div>
               </div>
             </section>
@@ -340,23 +403,31 @@ export default function App() {
         )}
 
         {/* Components Tab */}
-        {activeTab === 'components' && (
+        {activeTab === "components" && (
           <>
             {/* Buttons */}
             <section>
               <h2 className="mb-4">Buttons</h2>
               <div className="bg-syt-card border border-syt-border rounded-xl p-4 space-y-4">
                 <div className="space-y-2">
-                  <p className="text-sm text-syt-text-muted mb-2">Variants</p>
+                  <p className="text-sm text-syt-text-muted mb-2">
+                    Variants
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     <Button variant="primary">Primary</Button>
-                    <Button variant="secondary">Secondary</Button>
+                    <Button variant="secondary">
+                      Secondary
+                    </Button>
                     <Button variant="ghost">Ghost</Button>
-                    <Button variant="destructive">Destructive</Button>
+                    <Button variant="destructive">
+                      Destructive
+                    </Button>
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <p className="text-sm text-syt-text-muted mb-2">Sizes</p>
+                  <p className="text-sm text-syt-text-muted mb-2">
+                    Sizes
+                  </p>
                   <div className="flex flex-wrap items-center gap-2">
                     <Button size="sm">Small</Button>
                     <Button size="md">Medium</Button>
@@ -364,14 +435,25 @@ export default function App() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <p className="text-sm text-syt-text-muted mb-2">With Icons</p>
+                  <p className="text-sm text-syt-text-muted mb-2">
+                    With Icons
+                  </p>
                   <div className="flex flex-wrap gap-2">
-                    <Button icon={<Plus className="w-4 h-4" />}>Add Task</Button>
-                    <Button variant="secondary" icon={<Search className="w-4 h-4" />}>Search</Button>
+                    <Button icon={<Plus className="w-4 h-4" />}>
+                      Add Task
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      icon={<Search className="w-4 h-4" />}
+                    >
+                      Search
+                    </Button>
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <p className="text-sm text-syt-text-muted mb-2">States</p>
+                  <p className="text-sm text-syt-text-muted mb-2">
+                    States
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     <Button disabled>Disabled</Button>
                   </div>
@@ -383,7 +465,10 @@ export default function App() {
             <section>
               <h2 className="mb-4">Inputs</h2>
               <div className="bg-syt-card border border-syt-border rounded-xl p-4 space-y-4">
-                <Input label="Task Name" placeholder="Enter task name..." />
+                <Input
+                  label="Task Name"
+                  placeholder="Enter task name..."
+                />
                 <Input
                   label="Search"
                   placeholder="Search tasks..."
@@ -407,12 +492,24 @@ export default function App() {
               <h2 className="mb-4">Checkboxes & Toggles</h2>
               <div className="bg-syt-card border border-syt-border rounded-xl p-4 space-y-4">
                 <div className="space-y-2">
-                  <Checkbox label="Task completed" checked={false} />
-                  <Checkbox label="Task completed" checked={true} />
+                  <Checkbox
+                    label="Task completed"
+                    checked={false}
+                  />
+                  <Checkbox
+                    label="Task completed"
+                    checked={true}
+                  />
                 </div>
                 <div className="border-t border-syt-border pt-4 space-y-2">
-                  <Toggle label="Enable notifications" checked={false} />
-                  <Toggle label="Enable notifications" checked={true} />
+                  <Toggle
+                    label="Enable notifications"
+                    checked={false}
+                  />
+                  <Toggle
+                    label="Enable notifications"
+                    checked={true}
+                  />
                 </div>
               </div>
             </section>
@@ -422,7 +519,9 @@ export default function App() {
               <h2 className="mb-4">Badges & Pills</h2>
               <div className="bg-syt-card border border-syt-border rounded-xl p-4 space-y-4">
                 <div className="space-y-2">
-                  <p className="text-sm text-syt-text-muted mb-2">Priority</p>
+                  <p className="text-sm text-syt-text-muted mb-2">
+                    Priority
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     <PriorityBadge priority="low" />
                     <PriorityBadge priority="medium" />
@@ -430,7 +529,9 @@ export default function App() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <p className="text-sm text-syt-text-muted mb-2">Status</p>
+                  <p className="text-sm text-syt-text-muted mb-2">
+                    Status
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     <StatusBadge status="active" />
                     <StatusBadge status="done" />
@@ -438,7 +539,9 @@ export default function App() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <p className="text-sm text-syt-text-muted mb-2">Frequency</p>
+                  <p className="text-sm text-syt-text-muted mb-2">
+                    Frequency
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     <FrequencyBadge frequency="daily" />
                     <FrequencyBadge frequency="weekly" />
@@ -447,7 +550,9 @@ export default function App() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <p className="text-sm text-syt-text-muted mb-2">Generic</p>
+                  <p className="text-sm text-syt-text-muted mb-2">
+                    Generic
+                  </p>
                   <div className="flex flex-wrap gap-2">
                     <Badge variant="default">Default</Badge>
                     <Badge variant="accent">Accent</Badge>
@@ -466,26 +571,26 @@ export default function App() {
                 <FilterGroup>
                   <FilterChip
                     label="All"
-                    active={selectedFilter.includes('all')}
-                    onToggle={() => toggleFilter('all')}
+                    active={selectedFilter.includes("all")}
+                    onToggle={() => toggleFilter("all")}
                   />
                   <FilterChip
                     label="High Priority"
-                    active={selectedFilter.includes('high')}
-                    onToggle={() => toggleFilter('high')}
-                    onRemove={() => toggleFilter('high')}
+                    active={selectedFilter.includes("high")}
+                    onToggle={() => toggleFilter("high")}
+                    onRemove={() => toggleFilter("high")}
                     icon={<Flag className="w-3 h-3" />}
                   />
                   <FilterChip
                     label="Today"
-                    active={selectedFilter.includes('today')}
-                    onToggle={() => toggleFilter('today')}
+                    active={selectedFilter.includes("today")}
+                    onToggle={() => toggleFilter("today")}
                     icon={<Calendar className="w-3 h-3" />}
                   />
                   <FilterChip
                     label="Overdue"
-                    active={selectedFilter.includes('overdue')}
-                    onToggle={() => toggleFilter('overdue')}
+                    active={selectedFilter.includes("overdue")}
+                    onToggle={() => toggleFilter("overdue")}
                   />
                 </FilterGroup>
               </div>
@@ -496,22 +601,26 @@ export default function App() {
               <h2 className="mb-4">States</h2>
               <div className="space-y-4">
                 <div className="bg-syt-card border border-syt-border rounded-xl p-4">
-                  <p className="text-sm text-syt-text-muted mb-3">Loading Skeleton</p>
+                  <p className="text-sm text-syt-text-muted mb-3">
+                    Loading Skeleton
+                  </p>
                   <TaskCardSkeleton />
                 </div>
                 <div className="bg-syt-card border border-syt-border rounded-xl">
                   <EmptyState
-                    icon={<CheckCircle2 className="w-12 h-12" />}
+                    icon={
+                      <CheckCircle2 className="w-12 h-12" />
+                    }
                     title="No tasks for today"
                     description="You're all caught up! Add a new task or view all tasks."
                     primaryAction={{
-                      label: 'Add Task',
+                      label: "Add Task",
                       onClick: () => {},
-                      icon: <Plus className="w-4 h-4" />
+                      icon: <Plus className="w-4 h-4" />,
                     }}
                     secondaryAction={{
-                      label: 'View All',
-                      onClick: () => {}
+                      label: "View All",
+                      onClick: () => {},
                     }}
                   />
                 </div>
@@ -521,19 +630,28 @@ export default function App() {
         )}
 
         {/* Tasks Demo */}
-        {activeTab === 'tasks' && (
+        {activeTab === "tasks" && (
           <>
             <div className="flex items-center justify-between mb-4">
               <h2>Today's Tasks</h2>
-              <Button size="sm" icon={<Plus className="w-4 h-4" />}>
+              <Button
+                size="sm"
+                icon={<Plus className="w-4 h-4" />}
+              >
                 Add
               </Button>
             </div>
 
             <FilterGroup className="mb-4">
               <FilterChip label="All" active />
-              <FilterChip label="High Priority" icon={<Flag className="w-3 h-3" />} />
-              <FilterChip label="Today" icon={<Calendar className="w-3 h-3" />} />
+              <FilterChip
+                label="High Priority"
+                icon={<Flag className="w-3 h-3" />}
+              />
+              <FilterChip
+                label="Today"
+                icon={<Calendar className="w-3 h-3" />}
+              />
             </FilterGroup>
 
             <div className="space-y-3">
@@ -585,19 +703,30 @@ export default function App() {
         )}
 
         {/* Advanced Components Tab */}
-        {activeTab === 'advanced' && (
+        {activeTab === "advanced" && (
           <>
             {/* Modals & Dialogs */}
             <section>
               <h2 className="mb-4">Modals & Dialogs</h2>
               <div className="bg-syt-card border border-syt-border rounded-xl p-4 space-y-3">
-                <Button onClick={() => setShowModal(true)} className="w-full">
+                <Button
+                  onClick={() => setShowModal(true)}
+                  className="w-full"
+                >
                   Open Modal
                 </Button>
-                <Button variant="secondary" onClick={() => setShowBottomSheet(true)} className="w-full">
+                <Button
+                  variant="secondary"
+                  onClick={() => setShowBottomSheet(true)}
+                  className="w-full"
+                >
                   Open Bottom Sheet
                 </Button>
-                <Button variant="ghost" onClick={() => setShowConfirmDialog(true)} className="w-full">
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowConfirmDialog(true)}
+                  className="w-full"
+                >
                   Open Confirm Dialog
                 </Button>
               </div>
@@ -608,35 +737,59 @@ export default function App() {
               <h2 className="mb-4">Tabs</h2>
               <div className="space-y-4">
                 <div>
-                  <p className="text-sm text-syt-text-muted mb-2">Default</p>
+                  <p className="text-sm text-syt-text-muted mb-2">
+                    Default
+                  </p>
                   <Tabs
                     variant="default"
                     items={[
-                      { value: 'all', label: 'All' },
-                      { value: 'active', label: 'Active', badge: 3 },
-                      { value: 'done', label: 'Done' },
+                      { value: "all", label: "All" },
+                      {
+                        value: "active",
+                        label: "Active",
+                        badge: 3,
+                      },
+                      { value: "done", label: "Done" },
                     ]}
                   />
                 </div>
                 <div>
-                  <p className="text-sm text-syt-text-muted mb-2">Pills</p>
+                  <p className="text-sm text-syt-text-muted mb-2">
+                    Pills
+                  </p>
                   <Tabs
                     variant="pills"
                     items={[
-                      { value: 'all', label: 'All', icon: <ListTodo className="w-4 h-4" /> },
-                      { value: 'tasks', label: 'Tasks', icon: <CheckCircle2 className="w-4 h-4" /> },
-                      { value: 'recurring', label: 'Recurring', icon: <Repeat className="w-4 h-4" /> },
+                      {
+                        value: "all",
+                        label: "All",
+                        icon: <ListTodo className="w-4 h-4" />,
+                      },
+                      {
+                        value: "tasks",
+                        label: "Tasks",
+                        icon: (
+                          <CheckCircle2 className="w-4 h-4" />
+                        ),
+                      },
+                      {
+                        value: "recurring",
+                        label: "Recurring",
+                        icon: <Repeat className="w-4 h-4" />,
+                      },
                     ]}
                   />
                 </div>
                 <div>
-                  <p className="text-sm text-syt-text-muted mb-2">Underline</p>
+                  <p className="text-sm text-syt-text-muted mb-2">
+                    Underline
+                  </p>
                   <Tabs
                     variant="underline"
                     items={[
-                      { value: 'overview', label: 'Overview' },
-                      { value: 'details', label: 'Details' },
-                      { value: 'activity', label: 'Activity' },
+                      { value: "overview", label: "Overview" },
+                      { value: "details", label: "Details" },
+                      { value: "activity", label: "Activity" },
                     ]}
                   />
                 </div>
@@ -649,17 +802,17 @@ export default function App() {
               <div className="space-y-4">
                 <SegmentedControl
                   items={[
-                    { value: 'day', label: 'Day' },
-                    { value: 'week', label: 'Week' },
-                    { value: 'month', label: 'Month' },
+                    { value: "day", label: "Day" },
+                    { value: "week", label: "Week" },
+                    { value: "month", label: "Month" },
                   ]}
                 />
                 <SegmentedControl
                   fullWidth
                   items={[
-                    { value: 'low', label: 'Low' },
-                    { value: 'medium', label: 'Medium' },
-                    { value: 'high', label: 'High' },
+                    { value: "low", label: "Low" },
+                    { value: "medium", label: "Medium" },
+                    { value: "high", label: "High" },
                   ]}
                 />
               </div>
@@ -670,13 +823,31 @@ export default function App() {
               <h2 className="mb-4">Progress & Stats</h2>
               <div className="space-y-4">
                 <div>
-                  <p className="text-sm text-syt-text-muted mb-2">Progress Bar</p>
-                  <ProgressBar value={65} max={100} variant="accent" />
+                  <p className="text-sm text-syt-text-muted mb-2">
+                    Progress Bar
+                  </p>
+                  <ProgressBar
+                    value={65}
+                    max={100}
+                    variant="accent"
+                  />
                 </div>
                 <div className="flex items-center justify-around">
-                  <CircularProgress value={75} size={80} variant="accent" />
-                  <CircularProgress value={50} size={80} variant="success" />
-                  <CircularProgress value={25} size={80} variant="warning" />
+                  <CircularProgress
+                    value={75}
+                    size={80}
+                    variant="accent"
+                  />
+                  <CircularProgress
+                    value={50}
+                    size={80}
+                    variant="success"
+                  />
+                  <CircularProgress
+                    value={25}
+                    size={80}
+                    variant="warning"
+                  />
                 </div>
                 <StreakIndicator days={7} variant="fire" />
                 <CompletionStats completed={18} total={25} />
@@ -687,10 +858,26 @@ export default function App() {
             <section>
               <h2 className="mb-4">Alerts</h2>
               <div className="space-y-3">
-                <Alert variant="info" title="Info" description="This is an informational alert." />
-                <Alert variant="success" title="Success" description="Task completed successfully!" />
-                <Alert variant="warning" title="Warning" description="Due date is approaching." />
-                <Alert variant="error" title="Error" description="Failed to save changes." />
+                <Alert
+                  variant="info"
+                  title="Info"
+                  description="This is an informational alert."
+                />
+                <Alert
+                  variant="success"
+                  title="Success"
+                  description="Task completed successfully!"
+                />
+                <Alert
+                  variant="warning"
+                  title="Warning"
+                  description="Due date is approaching."
+                />
+                <Alert
+                  variant="error"
+                  title="Error"
+                  description="Failed to save changes."
+                />
               </div>
             </section>
 
@@ -698,16 +885,38 @@ export default function App() {
             <section>
               <h2 className="mb-4">Toasts</h2>
               <div className="bg-syt-card border border-syt-border rounded-xl p-4 space-y-3">
-                <Button onClick={() => toast.success('Task completed!')} className="w-full" variant="secondary">
+                <Button
+                  onClick={() =>
+                    toast.success("Task completed!")
+                  }
+                  className="w-full"
+                  variant="secondary"
+                >
                   Show Success Toast
                 </Button>
-                <Button onClick={() => toast.error('Failed to delete task')} className="w-full" variant="secondary">
+                <Button
+                  onClick={() =>
+                    toast.error("Failed to delete task")
+                  }
+                  className="w-full"
+                  variant="secondary"
+                >
                   Show Error Toast
                 </Button>
-                <Button onClick={() => toast.warning('Due date is tomorrow')} className="w-full" variant="secondary">
+                <Button
+                  onClick={() =>
+                    toast.warning("Due date is tomorrow")
+                  }
+                  className="w-full"
+                  variant="secondary"
+                >
                   Show Warning Toast
                 </Button>
-                <Button onClick={() => toast.info('Reminder set')} className="w-full" variant="secondary">
+                <Button
+                  onClick={() => toast.info("Reminder set")}
+                  className="w-full"
+                  variant="secondary"
+                >
                   Show Info Toast
                 </Button>
               </div>
@@ -717,8 +926,13 @@ export default function App() {
             <section>
               <h2 className="mb-4">Calendar Strip</h2>
               <CalendarStrip
-                highlightedDates={[new Date(), new Date(Date.now() + 86400000)]}
-                completedDates={[new Date(Date.now() - 86400000)]}
+                highlightedDates={[
+                  new Date(),
+                  new Date(Date.now() + 86400000),
+                ]}
+                completedDates={[
+                  new Date(Date.now() - 86400000),
+                ]}
               />
             </section>
 
@@ -737,7 +951,7 @@ export default function App() {
                   description="This task has a description and tags that can be revealed by clicking the expand button."
                   dueDate="Tomorrow"
                   priority="medium"
-                  tags={['Work', 'Design', 'Urgent']}
+                  tags={["Work", "Design", "Urgent"]}
                   expandable
                 />
                 <TaskListItem
@@ -752,10 +966,14 @@ export default function App() {
             {/* Swipe Actions */}
             <section>
               <h2 className="mb-4">Swipe Actions</h2>
-              <p className="text-sm text-syt-text-secondary mb-3">Swipe left or right on the task</p>
+              <p className="text-sm text-syt-text-secondary mb-3">
+                Swipe left or right on the task
+              </p>
               <TaskSwipeActions
-                onComplete={() => toast.success('Task completed!')}
-                onDelete={() => toast.error('Task deleted')}
+                onComplete={() =>
+                  toast.success("Task completed!")
+                }
+                onDelete={() => toast.error("Task deleted")}
               >
                 <TaskCard
                   title="Swipe me left or right"
@@ -771,7 +989,8 @@ export default function App() {
             <section>
               <h2 className="mb-4">Floating Action Button</h2>
               <p className="text-sm text-syt-text-secondary mb-3">
-                FAB is positioned at the bottom right (check the corner)
+                FAB is positioned at the bottom right (check the
+                corner)
               </p>
             </section>
 
@@ -780,25 +999,60 @@ export default function App() {
               <h2 className="mb-4">Icon System</h2>
               <div className="grid grid-cols-5 gap-4">
                 {[
-                  { Icon: Icons.navigation.tasks, label: 'Tasks' },
-                  { Icon: Icons.navigation.recurring, label: 'Recurring' },
-                  { Icon: Icons.navigation.reminders, label: 'Reminders' },
-                  { Icon: Icons.navigation.stats, label: 'Stats' },
-                  { Icon: Icons.actions.add, label: 'Add' },
-                  { Icon: Icons.actions.edit, label: 'Edit' },
-                  { Icon: Icons.actions.delete, label: 'Delete' },
-                  { Icon: Icons.status.success, label: 'Success' },
-                  { Icon: Icons.status.error, label: 'Error' },
-                  { Icon: Icons.status.warning, label: 'Warning' },
-                  { Icon: Icons.time.calendar, label: 'Calendar' },
-                  { Icon: Icons.time.clock, label: 'Clock' },
-                  { Icon: Icons.priority.flag, label: 'Flag' },
-                  { Icon: Icons.progress.flame, label: 'Flame' },
-                  { Icon: Icons.progress.target, label: 'Target' },
+                  {
+                    Icon: Icons.navigation.tasks,
+                    label: "Tasks",
+                  },
+                  {
+                    Icon: Icons.navigation.recurring,
+                    label: "Recurring",
+                  },
+                  {
+                    Icon: Icons.navigation.reminders,
+                    label: "Reminders",
+                  },
+                  {
+                    Icon: Icons.navigation.stats,
+                    label: "Stats",
+                  },
+                  { Icon: Icons.actions.add, label: "Add" },
+                  { Icon: Icons.actions.edit, label: "Edit" },
+                  {
+                    Icon: Icons.actions.delete,
+                    label: "Delete",
+                  },
+                  {
+                    Icon: Icons.status.success,
+                    label: "Success",
+                  },
+                  { Icon: Icons.status.error, label: "Error" },
+                  {
+                    Icon: Icons.status.warning,
+                    label: "Warning",
+                  },
+                  {
+                    Icon: Icons.time.calendar,
+                    label: "Calendar",
+                  },
+                  { Icon: Icons.time.clock, label: "Clock" },
+                  { Icon: Icons.priority.flag, label: "Flag" },
+                  {
+                    Icon: Icons.progress.flame,
+                    label: "Flame",
+                  },
+                  {
+                    Icon: Icons.progress.target,
+                    label: "Target",
+                  },
                 ].map(({ Icon, label }) => (
-                  <div key={label} className="flex flex-col items-center gap-2 p-3 bg-syt-card border border-syt-border rounded-lg">
+                  <div
+                    key={label}
+                    className="flex flex-col items-center gap-2 p-3 bg-syt-card border border-syt-border rounded-lg"
+                  >
                     <Icon className="w-6 h-6 text-syt-accent" />
-                    <span className="text-xs text-syt-text-muted text-center">{label}</span>
+                    <span className="text-xs text-syt-text-muted text-center">
+                      {label}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -807,12 +1061,13 @@ export default function App() {
         )}
 
         {/* Screens Tab */}
-        {activeTab === 'screens' && (
+        {activeTab === "screens" && (
           <>
             <section>
               <h2 className="mb-4">Demo Screens</h2>
               <p className="text-sm text-syt-text-secondary mb-4">
-                Tap on any screen to view the full implementation
+                Tap on any screen to view the full
+                implementation
               </p>
 
               {/* ── Product screens with 5-tab nav ─────────────────────────── */}
@@ -829,7 +1084,7 @@ export default function App() {
               <div className="space-y-3 mb-4">
                 {/* Home — 5-tab nav */}
                 <button
-                  onClick={() => setProductTab('home')}
+                  onClick={() => setActiveTab("home")}
                   className="w-full flex items-center justify-between p-4 bg-syt-card border border-syt-accent/30 rounded-xl hover:border-syt-accent/60 transition-colors text-left"
                 >
                   <div className="flex items-center gap-3">
@@ -837,64 +1092,73 @@ export default function App() {
                       <Home className="w-4 h-4 text-syt-accent" />
                     </div>
                     <div>
-                      <h4 className="font-medium text-syt-text mb-0.5">Home (5-tab nav)</h4>
+                      <h4 className="font-medium text-syt-text mb-0.5">
+                        Home
+                      </h4>
                       <p className="text-sm text-syt-text-secondary">
-                        Multi-day hub · accordion sections · FAB · ProductBottomNav
+                        Multi-day hub · accordion sections · FAB
+                        · ProductBottomNav
                       </p>
                     </div>
                   </div>
                   <Icons.ui.chevronRight className="w-5 h-5 text-syt-accent flex-shrink-0" />
                 </button>
 
-                {/* Tracker — 5-tab nav */}
-                <button
-                  onClick={() => setProductTab('tracker')}
-                  className="w-full flex items-center justify-between p-4 bg-syt-card border border-syt-accent/30 rounded-xl hover:border-syt-accent/60 transition-colors text-left"
-                >
+                {/* Tracker — placeholder for now */}
+                <div className="w-full flex items-center justify-between p-4 bg-syt-card border border-syt-border rounded-xl opacity-50">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-syt-accent/10 flex items-center justify-center flex-shrink-0">
-                      <CalendarDays className="w-4 h-4 text-syt-accent" />
+                    <div className="w-8 h-8 rounded-lg bg-syt-surface flex items-center justify-center flex-shrink-0">
+                      <CalendarDays className="w-4 h-4 text-syt-text-muted" />
                     </div>
                     <div>
-                      <h4 className="font-medium text-syt-text mb-0.5">Tracker (5-tab nav)</h4>
+                      <h4 className="font-medium text-syt-text mb-0.5">
+                        Tracker (Coming Soon)
+                      </h4>
                       <p className="text-sm text-syt-text-secondary">
-                        Single-day focus · date nav · progress · ProductBottomNav
+                        Single-day focus · date nav · progress ·
+                        ProductBottomNav
                       </p>
                     </div>
                   </div>
-                  <Icons.ui.chevronRight className="w-5 h-5 text-syt-accent flex-shrink-0" />
-                </button>
+                </div>
               </div>
 
               {/* ── Other screens ───────────────────────────────────────────── */}
               <div className="mb-2">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="h-px flex-1 bg-syt-border" />
-                  <span className="text-xs text-syt-text-muted px-2">Other screens</span>
+                  <span className="text-xs text-syt-text-muted px-2">
+                    Other screens
+                  </span>
                   <div className="h-px flex-1 bg-syt-border" />
                 </div>
               </div>
 
               <div className="space-y-3">
                 <button
-                  onClick={() => setShowScreen('task-details')}
+                  onClick={() => setShowScreen("task-details")}
                   className="w-full flex items-center justify-between p-4 bg-syt-card border border-syt-border rounded-xl hover:border-syt-accent/30 transition-colors text-left"
                 >
                   <div>
-                    <h4 className="font-medium text-syt-text mb-1">Task Details</h4>
+                    <h4 className="font-medium text-syt-text mb-1">
+                      Task Details
+                    </h4>
                     <p className="text-sm text-syt-text-secondary">
-                      Full task details with actions and activity
+                      Full task details with actions and
+                      activity
                     </p>
                   </div>
                   <Icons.ui.chevronRight className="w-5 h-5 text-syt-text-muted" />
                 </button>
 
                 <button
-                  onClick={() => setShowScreen('create-task')}
+                  onClick={() => setShowScreen("create-task")}
                   className="w-full flex items-center justify-between p-4 bg-syt-card border border-syt-border rounded-xl hover:border-syt-accent/30 transition-colors text-left"
                 >
                   <div>
-                    <h4 className="font-medium text-syt-text mb-1">Create Task</h4>
+                    <h4 className="font-medium text-syt-text mb-1">
+                      Create Task
+                    </h4>
                     <p className="text-sm text-syt-text-secondary">
                       Form to create a new task with all options
                     </p>
@@ -903,13 +1167,16 @@ export default function App() {
                 </button>
 
                 <button
-                  onClick={() => setShowScreen('stats')}
+                  onClick={() => setShowScreen("stats")}
                   className="w-full flex items-center justify-between p-4 bg-syt-card border border-syt-border rounded-xl hover:border-syt-accent/30 transition-colors text-left"
                 >
                   <div>
-                    <h4 className="font-medium text-syt-text mb-1">Statistics</h4>
+                    <h4 className="font-medium text-syt-text mb-1">
+                      Statistics
+                    </h4>
                     <p className="text-sm text-syt-text-secondary">
-                      Analytics dashboard with charts and progress
+                      Analytics dashboard with charts and
+                      progress
                     </p>
                   </div>
                   <Icons.ui.chevronRight className="w-5 h-5 text-syt-text-muted" />
@@ -957,6 +1224,15 @@ export default function App() {
             </section>
           </>
         )}
+
+        {/* Home Tab — renders HomeScreen content without ProductBottomNav */}
+        {activeTab === "home" && (
+          <HomeScreen
+            activeTab="home"
+            showProductNav={false}
+            contentOnly={true}
+          />
+        )}
       </main>
 
       <BottomNav
@@ -966,10 +1242,10 @@ export default function App() {
       />
 
       {/* Floating Action Button */}
-      {activeTab === 'advanced' && (
+      {activeTab === "advanced" && (
         <FloatingActionButton
           icon={<Plus className="w-6 h-6" />}
-          onClick={() => toast.info('FAB clicked!')}
+          onClick={() => toast.info("FAB clicked!")}
         />
       )}
 
@@ -981,17 +1257,22 @@ export default function App() {
         description="This is a desktop modal component"
         footer={
           <div className="flex gap-2 justify-end">
-            <Button variant="secondary" onClick={() => setShowModal(false)}>
+            <Button
+              variant="secondary"
+              onClick={() => setShowModal(false)}
+            >
               Cancel
             </Button>
-            <Button onClick={() => setShowModal(false)}>Confirm</Button>
+            <Button onClick={() => setShowModal(false)}>
+              Confirm
+            </Button>
           </div>
         }
       >
         <div className="py-4">
           <p className="text-syt-text-secondary">
-            This is the modal content. You can put any content here including forms,
-            lists, or other components.
+            This is the modal content. You can put any content
+            here including forms, lists, or other components.
           </p>
         </div>
       </Modal>
@@ -1004,10 +1285,17 @@ export default function App() {
         description="This is a mobile-friendly bottom sheet"
         footer={
           <div className="flex gap-2">
-            <Button variant="secondary" className="flex-1" onClick={() => setShowBottomSheet(false)}>
+            <Button
+              variant="secondary"
+              className="flex-1"
+              onClick={() => setShowBottomSheet(false)}
+            >
               Cancel
             </Button>
-            <Button className="flex-1" onClick={() => setShowBottomSheet(false)}>
+            <Button
+              className="flex-1"
+              onClick={() => setShowBottomSheet(false)}
+            >
               Confirm
             </Button>
           </div>
@@ -1015,8 +1303,9 @@ export default function App() {
       >
         <div className="py-4 space-y-3">
           <p className="text-syt-text-secondary">
-            Bottom sheets are great for mobile interfaces. They slide up from the bottom
-            and can be dismissed by dragging down.
+            Bottom sheets are great for mobile interfaces. They
+            slide up from the bottom and can be dismissed by
+            dragging down.
           </p>
           <div className="space-y-2">
             <div className="p-3 bg-syt-surface border border-syt-border rounded-lg">
@@ -1041,14 +1330,20 @@ export default function App() {
         confirmLabel="Delete"
         cancelLabel="Cancel"
         variant="destructive"
-        onConfirm={() => toast.success('Task deleted')}
+        onConfirm={() => toast.success("Task deleted")}
       />
     </div>
   );
 }
 
 // Helper component for color swatches
-function ColorSwatch({ name, value }: { name: string; value: string }) {
+function ColorSwatch({
+  name,
+  value,
+}: {
+  name: string;
+  value: string;
+}) {
   return (
     <div className="flex items-center gap-2 p-2 bg-syt-surface border border-syt-border rounded-lg">
       <div
@@ -1056,8 +1351,12 @@ function ColorSwatch({ name, value }: { name: string; value: string }) {
         style={{ backgroundColor: value }}
       />
       <div className="min-w-0 flex-1">
-        <p className="text-xs font-medium text-syt-text truncate">{name}</p>
-        <p className="text-xs text-syt-text-muted truncate">{value}</p>
+        <p className="text-xs font-medium text-syt-text truncate">
+          {name}
+        </p>
+        <p className="text-xs text-syt-text-muted truncate">
+          {value}
+        </p>
       </div>
     </div>
   );

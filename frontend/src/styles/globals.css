@@ -36,6 +36,8 @@
   --syt-glass-border: rgba(255, 255, 255, 0.5);
   --syt-glass-blur: 12px;
   --syt-overlay-backdrop: rgba(15, 23, 42, 0.55);
+  /* Одна колонка контента (согласовано с Layout / BottomSheet) */
+  --syt-content-max: 40rem;
 }
 
 .dark,
@@ -70,6 +72,12 @@ body {
   font-family: var(--syt-font, ui-sans-serif, system-ui, sans-serif);
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* Нижний отступ под «домашнюю» полоску iPhone; используется в Layout / BottomSheet */
+.safe-area-pb {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 #__next,

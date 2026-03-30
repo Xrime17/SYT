@@ -15,13 +15,23 @@ function addDaysLocal(base: Date, delta: number): Date {
 }
 
 /**
+ * Monday of the Monday–Sunday week that contains `ref` (local calendar).
+ */
+export function startOfWeekMondayStr(ref: Date): string {
+  const d = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate());
+  const jsDay = d.getDay();
+  const daysFromMonday = jsDay === 0 ? 6 : jsDay - 1;
+  const monday = addDaysLocal(d, -daysFromMonday);
+  return toDateStrLocal(monday);
+}
+
+/**
  * End of the **Monday–Sunday** week that contains `ref` (Sunday’s date in local time).
- * Used for "This week" bucket: from day-after-tomorrow through this Sunday inclusive.
  */
 export function endOfWeekSundayStr(ref: Date): string {
   const d = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate());
-  const jsDay = d.getDay(); // 0 Sun .. 6 Sat
-  const mondayBased = jsDay === 0 ? 6 : jsDay - 1; // Mon=0 .. Sun=6
+  const jsDay = d.getDay();
+  const mondayBased = jsDay === 0 ? 6 : jsDay - 1;
   const daysUntilSunday = 6 - mondayBased;
   const sun = addDaysLocal(d, daysUntilSunday);
   return toDateStrLocal(sun);
@@ -32,46 +42,53 @@ function dueLocalStr(task: Task): string | null {
   return toDateStrLocal(new Date(task.dueDate));
 }
 
-export type HomeTaskGroup = 'today' | 'tomorrow' | 'thisWeek' | 'later';
+/** Four Home accordions + tasks outside the week (not shown on Home). */
+export type HomeListKey = 'today' | 'tomorrow' | 'thisWeek' | 'completedThisWeek';
 
 /**
- * Home grouping rules (single source for /home):
+ * Home lists (single source for /home):
  *
- * **Today**
- * - `dueDate` falls on the local calendar **today**, OR
- * - `dueDate` is **before today** (overdue) — still shown under Today for attention, OR
- * - **No `dueDate` and status is ACTIVE** (inbox / undated active work)
+ * **Today** — active: undated inbox, overdue, due today; completed: only when due date is today (strikethrough in UI).
  *
- * **Tomorrow** — `dueDate` on local tomorrow.
+ * **Tomorrow** — active only, due tomorrow.
  *
- * **This week** — `dueDate` strictly after tomorrow and on or before **Sunday** of the
- * current Monday–Sunday week (see `endOfWeekSundayStr`).
+ * **This week** — active only, due after tomorrow through Sunday of current week (excludes today & tomorrow).
  *
- * **Later** — everything else (future beyond this week, no due + completed, ARCHIVED, etc.).
- * Full list remains on `/tasks`.
+ * **Completed this week** — `status === COMPLETED`, completion date (`updatedAt` local) within Monday–Sunday week.
+ * Completed tasks with due date **today** appear only under Today (not duplicated here).
+ *
+ * Tasks with due beyond this week are omitted from Home (full list on `/tasks`).
  */
-export function groupTasksForHome(tasks: Task[], now: Date = new Date()): Record<HomeTaskGroup, Task[]> {
+export function groupHomeLists(tasks: Task[], now: Date = new Date()): Record<HomeListKey, Task[]> {
   const todayStr = toDateStrLocal(now);
   const tomorrowStr = toDateStrLocal(addDaysLocal(now, 1));
+  const weekStartStr = startOfWeekMondayStr(now);
   const weekEndStr = endOfWeekSundayStr(now);
 
-  const buckets: Record<HomeTaskGroup, Task[]> = {
+  const buckets: Record<HomeListKey, Task[]> = {
     today: [],
     tomorrow: [],
     thisWeek: [],
-    later: [],
+    completedThisWeek: [],
   };
 
   for (const task of tasks) {
     const due = dueLocalStr(task);
 
-    if (!due && task.status === 'ACTIVE') {
-      buckets.today.push(task);
+    if (task.status === 'COMPLETED') {
+      const updStr = toDateStrLocal(new Date(task.updatedAt));
+      if (due === todayStr) {
+        buckets.today.push(task);
+        continue;
+      }
+      if (updStr >= weekStartStr && updStr <= weekEndStr) {
+        buckets.completedThisWeek.push(task);
+      }
       continue;
     }
 
     if (!due) {
-      buckets.later.push(task);
+      buckets.today.push(task);
       continue;
     }
 
@@ -87,11 +104,22 @@ export function groupTasksForHome(tasks: Task[], now: Date = new Date()): Record
 
     if (due > tomorrowStr && due <= weekEndStr) {
       buckets.thisWeek.push(task);
-      continue;
     }
-
-    buckets.later.push(task);
   }
 
   return buckets;
+}
+
+/** @deprecated Use `groupHomeLists` and `HomeListKey`. */
+export type HomeTaskGroup = 'today' | 'tomorrow' | 'thisWeek' | 'later';
+
+/** @deprecated Use `groupHomeLists`. */
+export function groupTasksForHome(tasks: Task[], now: Date = new Date()): Record<HomeTaskGroup, Task[]> {
+  const next = groupHomeLists(tasks, now);
+  return {
+    today: next.today,
+    tomorrow: next.tomorrow,
+    thisWeek: next.thisWeek,
+    later: [],
+  };
 }

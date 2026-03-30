@@ -2,11 +2,11 @@
  * ProductBottomNav — Single source of truth for the Telegram Mini App product chrome.
  *
  * 5 tabs, fixed order:
- *   1. Home      (house icon)   — default active
- *   2. Tracker   (calendar icon)
- *   3. Tasks     (list-todo icon)
- *   4. Recurring (repeat icon)
- *   5. Reminders (bell icon)
+ *   1. Tracker   (calendar icon)
+ *   2. Tasks     (list-todo icon)
+ *   3. Recurring (repeat icon)
+ *   4. Reminders (bell icon)
+ *   5. Home      (house icon)   — default active
  *
  * Usage:
  *   <ProductBottomNav activeId="home" onItemClick={(id) => navigate(id)} />
@@ -16,7 +16,7 @@
 import { Home, CalendarDays, ListTodo, Repeat, Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export const PRODUCT_TAB_IDS = ['home', 'tracker', 'tasks', 'recurring', 'reminders'] as const;
+export const PRODUCT_TAB_IDS = ['tracker', 'tasks', 'recurring', 'reminders', 'home'] as const;
 export type ProductTabId = (typeof PRODUCT_TAB_IDS)[number];
 
 export interface ProductNavBadges {
@@ -55,11 +55,11 @@ export function ProductBottomNav({
   className,
 }: ProductBottomNavProps) {
   const tabs: TabDef[] = [
-    { id: 'home',      label: 'Home',      icon: <Home      className="w-6 h-6" strokeWidth={2} /> },
     { id: 'tracker',   label: 'Tracker',   icon: <CalendarDays className="w-6 h-6" strokeWidth={2} /> },
     { id: 'tasks',     label: 'Tasks',     icon: <ListTodo  className="w-6 h-6" strokeWidth={2} /> },
     { id: 'recurring', label: 'Recurring', icon: <Repeat    className="w-6 h-6" strokeWidth={2} /> },
     { id: 'reminders', label: 'Reminders', icon: <Bell      className="w-6 h-6" strokeWidth={2} /> },
+    { id: 'home',      label: 'Home',      icon: <Home      className="w-6 h-6" strokeWidth={2} /> },
   ];
 
   return (

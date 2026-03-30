@@ -27,12 +27,12 @@ const SytAccordionTrigger = React.forwardRef<
     <AccordionPrimitive.Trigger
       ref={ref}
       className={cn(
-        'flex flex-1 items-center justify-between py-4 px-4 -mx-4',
-        'text-left font-medium text-syt-text',
+        'flex flex-1 items-center justify-between py-3 px-3 -mx-3',
+        'text-left font-semibold text-syt-text text-base',
         'transition-all duration-200',
-        'hover:bg-syt-surface rounded-lg',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-syt-focus-ring',
-        'group',
+        'hover:bg-syt-surface/50 active:bg-syt-surface rounded-lg',
+        'focus-visible:outline-none',
+        'group touch-manipulation',
         className
       )}
       {...props}
@@ -40,14 +40,14 @@ const SytAccordionTrigger = React.forwardRef<
       <div className="flex items-center gap-2">
         <span>{children}</span>
         {count !== undefined && (
-          <span className="text-xs text-syt-text-muted font-normal">
-            {count} {count === 1 ? 'task' : 'tasks'}
+          <span className="text-xs text-syt-text-muted font-normal bg-syt-surface px-2 py-0.5 rounded-full">
+            {count}
           </span>
         )}
       </div>
       <ChevronDown
         className={cn(
-          'h-5 w-5 shrink-0 text-syt-text-muted',
+          'h-5 w-5 shrink-0 text-syt-text-secondary',
           'transition-transform duration-200',
           'group-data-[state=open]:rotate-180'
         )}

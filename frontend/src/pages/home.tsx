@@ -1,18 +1,16 @@
 'use client';
 
 /**
- * Home — структура как `ai-system/.../HomeScreen.tsx` + `NAVIGATION_IA.md`:
- * липкий внутренний хедер (счётчики, Settings), полоса категорий, 3 аккордеона (Today / Tomorrow / This week).
- * Фильтр чипа: сервер `GET /tasks/:userId?categoryId=` (фаза 2.2) — чип или без query = все задачи.
- * `groupTasksForHome` на клиенте по **уже отфильтрованному** списку: те же bucket’ы, что и на полном наборе, без второго фильтра по `categoryId`.
- * Колокольчик (фаза 2.3): `GET /reminders/user/:userId` + `POST /reminders/quick`; оптимистичный SWR-кэш и откат при ошибке.
+ * Home — хедер Tasks, полоса категорий, блок привычек (заглушка), 4 аккордеона:
+ * Today / Tomorrow / This week / Completed this week.
+ * `groupHomeLists` на клиенте по отфильтрованному списку `GET /tasks/:userId`.
+ * Напоминания: `GET /reminders/user`, выключение `POST /reminders/quick`, новое время — `POST /reminders` (upsert).
  */
 
 import { useCallback, useMemo, useState } from 'react';
 import useSWR from 'swr';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { useRouter } from 'next/router';
 import { Layout } from '@/components/Layout';
 import { BottomSheet } from '@/components/BottomSheet';
 import { HomeCategoryEditSheet } from '@/components/HomeCategoryEditSheet';
@@ -22,6 +20,7 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { HomeEmptyState } from '@/components/HomeEmptyState';
 import { HomeTaskCard } from '@/components/HomeTaskCard';
+import { HomeReminderSheet } from '@/components/HomeReminderSheet';
 import type { Priority } from '@/components/PriorityBadge';
 import {
   SytAccordion,
@@ -42,21 +41,23 @@ import { getHomeSubtitleMetrics } from '@/api/home-metrics';
 import {
   getRemindersForUser,
   toggleHomeQuickReminder,
+  createReminder,
   type Reminder,
 } from '@/api/reminders';
-import { groupTasksForHome, type HomeTaskGroup } from '@/utils/home-task-groups';
+import { groupHomeLists, type HomeListKey } from '@/utils/home-task-groups';
 
 const OpenInTelegramCard = dynamic(
   () => import('@/components/OpenInTelegramCard').then((m) => m.OpenInTelegramCard),
   { ssr: false, loading: () => <div className="h-48 animate-pulse rounded-2xl bg-[var(--syt-card)]" /> }
 );
 
-type AccordionKey = 'today' | 'tomorrow' | 'thisWeek';
+type AccordionKey = HomeListKey;
 
-const ACCORDION_SECTIONS: { key: AccordionKey; bucket: HomeTaskGroup; title: string; includeLater?: boolean }[] = [
-  { key: 'today', bucket: 'today', title: 'Today' },
-  { key: 'tomorrow', bucket: 'tomorrow', title: 'Tomorrow' },
-  { key: 'thisWeek', bucket: 'thisWeek', title: 'This week', includeLater: true },
+const ACCORDION_SECTIONS: { key: AccordionKey; title: string }[] = [
+  { key: 'today', title: 'Today' },
+  { key: 'tomorrow', title: 'Tomorrow' },
+  { key: 'thisWeek', title: 'This week' },
+  { key: 'completedThisWeek', title: 'Completed this week' },
 ];
 
 function formatDate(dueDate: string | null | undefined): string {
@@ -84,7 +85,6 @@ function formatTimeLocal(iso: string | null | undefined): string | null {
 }
 
 export default function HomePage() {
-  const router = useRouter();
   const { user, isInTelegram, telegramLoading, telegramError } = useUser();
   const [mutateError, setMutateError] = useState<string | null>(null);
   const [createSheetOpen, setCreateSheetOpen] = useState(false);
@@ -94,6 +94,7 @@ export default function HomePage() {
   >(null);
   /** `null` — фильтр «все задачи»; иначе UUID `HomeCategory`. */
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string | null>(null);
+  const [reminderSheetTask, setReminderSheetTask] = useState<Task | null>(null);
 
   const tasksSwrKey = user?.id ? tasksListSwrKey(user.id, selectedCategoryFilter) : null;
 
@@ -161,18 +162,27 @@ export default function HomePage() {
     return s;
   }, [remindersData]);
 
-  const buckets = useMemo(() => groupTasksForHome(tasks), [tasks]);
-
-  const sectionTasks = useCallback(
-    (bucket: HomeTaskGroup, includeLater?: boolean): Task[] => {
-      const base = buckets[bucket];
-      if (includeLater) return [...base, ...buckets.later];
-      return base;
-    },
-    [buckets]
-  );
+  const buckets = useMemo(() => groupHomeLists(tasks), [tasks]);
 
   const clearMutateError = useCallback(() => setMutateError(null), []);
+
+  const reminderByTaskId = useMemo(() => {
+    const m = new Map<string, Reminder>();
+    for (const r of remindersData ?? []) {
+      if (!r.sent) m.set(r.taskId, r);
+    }
+    return m;
+  }, [remindersData]);
+
+  const timeForTask = useCallback(
+    (task: Task): string | null => {
+      const r = reminderByTaskId.get(task.id);
+      if (r) return formatTimeLocal(r.remindAt);
+      if (task.dueDate) return formatTimeLocal(task.dueDate);
+      return null;
+    },
+    [reminderByTaskId]
+  );
 
   const handleToggle = useCallback(
     async (task: Task) => {
@@ -194,7 +204,6 @@ export default function HomePage() {
 
   const handleDelete = useCallback(
     async (task: Task) => {
-      if (!confirm('Удалить задачу?')) return;
       clearMutateError();
       try {
         await deleteTask(task.id);
@@ -207,57 +216,57 @@ export default function HomePage() {
     [mutate, mutateReminders, clearMutateError]
   );
 
-  const handleQuickReminder = useCallback(
-    async (task: Task) => {
-      if (!user || remindersHydrating) return;
+  const handleSaveReminder = useCallback(
+    async (remindAtIso: string) => {
+      if (!user || !reminderSheetTask) return;
       clearMutateError();
-      const nextEnabled = !taskIdsWithUnsentReminder.has(task.id);
-      let rollback: Reminder[] = [];
-
-      await mutateReminders(
-        (current) => {
-          const list = current ?? [];
-          rollback = list.map((r) => ({
-            id: r.id,
-            taskId: r.taskId,
-            remindAt: r.remindAt,
-            sent: r.sent,
-          }));
-          const withoutTaskAndOptimistic = list.filter(
-            (r) => r.taskId !== task.id && !String(r.id).startsWith('optimistic-')
-          );
-          if (nextEnabled) {
-            return [
-              ...withoutTaskAndOptimistic,
-              {
-                id: `optimistic-${task.id}`,
-                taskId: task.id,
-                remindAt: new Date().toISOString(),
-                sent: false,
-              },
-            ];
-          }
-          return withoutTaskAndOptimistic;
-        },
-        { revalidate: false }
-      );
-
       try {
-        const result = await toggleHomeQuickReminder(task.id, user.id, nextEnabled);
+        const reminder = await createReminder({
+          taskId: reminderSheetTask.id,
+          remindAt: remindAtIso,
+        });
         await mutateReminders(
           (current) => {
             const list = current ?? [];
-            const cleared = list.filter(
-              (r) => r.taskId !== task.id && !String(r.id).startsWith('optimistic-')
-            );
-            if (result.enabled) return [...cleared, result.reminder];
-            return cleared;
+            const rest = list.filter((r) => r.taskId !== reminderSheetTask.id);
+            return [...rest, reminder];
           },
           { revalidate: false }
         );
       } catch (e) {
-        await mutateReminders(() => rollback, { revalidate: false });
         setMutateError(e instanceof Error ? e.message : 'Ошибка');
+      }
+    },
+    [user, reminderSheetTask, mutateReminders, clearMutateError]
+  );
+
+  const handleReminderPress = useCallback(
+    async (task: Task) => {
+      if (!user || remindersHydrating) return;
+      clearMutateError();
+      if (taskIdsWithUnsentReminder.has(task.id)) {
+        let rollback: Reminder[] = [];
+        await mutateReminders(
+          (current) => {
+            const list = current ?? [];
+            rollback = list.map((r) => ({
+              id: r.id,
+              taskId: r.taskId,
+              remindAt: r.remindAt,
+              sent: r.sent,
+            }));
+            return list.filter((r) => r.taskId !== task.id);
+          },
+          { revalidate: false }
+        );
+        try {
+          await toggleHomeQuickReminder(task.id, user.id, false);
+        } catch (e) {
+          await mutateReminders(() => rollback, { revalidate: false });
+          setMutateError(e instanceof Error ? e.message : 'Ошибка');
+        }
+      } else {
+        setReminderSheetTask(task);
       }
     },
     [user, remindersHydrating, taskIdsWithUnsentReminder, mutateReminders, clearMutateError]
@@ -319,10 +328,10 @@ export default function HomePage() {
         {user && (
           <>
             {/* Внутренний хедер Home + полоса категорий (как HomeScreen) */}
-            <header className="sticky top-0 z-10 -mx-4 border-b border-[var(--syt-border)] bg-[var(--syt-background)]/80 px-4 py-6 backdrop-blur-lg">
+            <header className="sticky top-0 z-10 border-b border-[var(--syt-border)] bg-[var(--syt-background)]/80 py-6 backdrop-blur-lg">
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div className="min-w-0 flex-1">
-                  <h1 className="text-xl font-semibold text-[var(--syt-text)] mb-1">Home</h1>
+                  <h1 className="text-xl font-semibold text-[var(--syt-text)] mb-1">Tasks</h1>
                   <p className="text-sm text-[var(--syt-text-secondary)]">
                     Today · {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'} · {habitCount}{' '}
                     {habitCount === 1 ? 'habit' : 'habits'}
@@ -344,6 +353,56 @@ export default function HomePage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                 </Link>
+              </div>
+
+              <div
+                className="mb-4 flex items-center gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                aria-label="Habits"
+              >
+                <div
+                  className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 border-[var(--syt-accent)] bg-[var(--syt-accent)]/20 text-[var(--syt-accent)]"
+                  title="Habit"
+                  aria-hidden
+                >
+                  <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
+                    <path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z" />
+                  </svg>
+                </div>
+                <div
+                  className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-[var(--syt-border)] bg-[var(--syt-card)] text-[var(--syt-text-muted)]"
+                  aria-hidden
+                >
+                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  </svg>
+                </div>
+                <div
+                  className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-[var(--syt-border)] bg-[var(--syt-card)] text-[var(--syt-text-muted)]"
+                  aria-hidden
+                >
+                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div
+                  className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-[var(--syt-border)] bg-[var(--syt-card)] text-[var(--syt-text-muted)]"
+                  aria-hidden
+                >
+                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
+                  </svg>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {}}
+                  className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-dashed border-[var(--syt-border)] bg-[var(--syt-surface)] text-[var(--syt-text-muted)] hover:border-[var(--syt-accent)] hover:text-[var(--syt-accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--syt-accent)]"
+                  aria-label="Add habit (coming soon)"
+                  title="Add habit (coming soon)"
+                >
+                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                </button>
               </div>
 
               <div className="flex items-center gap-2 overflow-x-auto py-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -491,12 +550,12 @@ export default function HomePage() {
                   className="border-b border-[var(--syt-border)] pb-1"
                   defaultValue={['today']}
                 >
-                  {ACCORDION_SECTIONS.map(({ key, bucket, title, includeLater }) => {
-                    const list = sectionTasks(bucket, includeLater);
+                  {ACCORDION_SECTIONS.map(({ key: sectionKey, title }) => {
+                    const list = buckets[sectionKey];
                     const count = list.length;
 
                     return (
-                      <SytAccordionItem key={key} value={key}>
+                      <SytAccordionItem key={sectionKey} value={sectionKey}>
                         <SytAccordionTrigger count={count}>{title}</SytAccordionTrigger>
                         <SytAccordionContent>
                           {list.length === 0 ? (
@@ -506,28 +565,27 @@ export default function HomePage() {
                           ) : (
                             list.map((task) => {
                               const isCompleted = task.status === 'COMPLETED';
-                              const timeStr = formatTimeLocal(task.dueDate);
+                              const timeStr = timeForTask(task);
                               return (
                                 <HomeTaskCard
                                   key={task.id}
                                   title={task.title}
                                   titleHref={`/tasks/${task.id}`}
                                   description={task.description}
-                                  time={timeStr}
+                                  reminderActive={taskIdsWithUnsentReminder.has(task.id)}
+                                  reminderTime={timeStr}
+                                  reminderToggleDisabled={remindersHydrating}
+                                  onReminderPress={() => void handleReminderPress(task)}
                                   priority={prioritySafe(task.priority)}
                                   statusLabel={statusLabel(task.status)}
                                   dueDateChip={
                                     task.dueDate && !timeStr ? formatDate(task.dueDate) : null
                                   }
                                   completed={isCompleted}
-                                  reminderEnabled={taskIdsWithUnsentReminder.has(task.id)}
-                                  reminderToggleDisabled={remindersHydrating}
                                   onToggleComplete={() => handleToggle(task)}
-                                  onToggleReminder={() => handleQuickReminder(task)}
-                                  onEdit={() => void router.push(`/tasks/${task.id}`)}
-                                  onDelete={() => handleDelete(task)}
+                                  onDelete={() => void handleDelete(task)}
                                   footerLine={
-                                    key !== 'today' && task.dueDate
+                                    sectionKey !== 'today' && task.dueDate
                                       ? isCompleted
                                         ? formatDate(task.dueDate)
                                         : formatDue(task.dueDate)
@@ -551,7 +609,7 @@ export default function HomePage() {
           <button
             type="button"
             onClick={openCreateSheet}
-            className="fixed z-[95] right-4 flex h-14 w-14 items-center justify-center rounded-full border-2 border-[var(--syt-accent)] bg-[var(--syt-card)] text-[var(--syt-accent)] shadow-[var(--syt-shadow-soft)] hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--syt-accent)] focus:ring-offset-2 focus:ring-offset-[var(--syt-background)]"
+            className="fixed z-[95] right-4 flex h-14 w-14 items-center justify-center rounded-full border-2 border-[var(--syt-accent)] bg-[var(--syt-accent)] text-white shadow-[var(--syt-shadow-soft)] hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--syt-accent)] focus:ring-offset-2 focus:ring-offset-[var(--syt-background)]"
             style={{
               /* Над нижним таббаром Layout: h-[52px] + safe-area-pb на nav */
               bottom: 'calc(52px + env(safe-area-inset-bottom, 0px) + 16px)',
@@ -562,6 +620,14 @@ export default function HomePage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
           </button>
+        )}
+
+        {user && (
+          <HomeReminderSheet
+            open={reminderSheetTask !== null}
+            onClose={() => setReminderSheetTask(null)}
+            onSave={handleSaveReminder}
+          />
         )}
 
         {user && (

@@ -47,7 +47,7 @@ export function BottomSheet({ open, onClose, title, titleId = 'bottom-sheet-titl
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="relative z-[1] mx-auto w-full max-w-[640px] max-h-[85vh] flex flex-col rounded-t-[16px] border border-[var(--syt-border)] border-b-0 bg-[var(--syt-surface)] shadow-[var(--syt-shadow-soft)] safe-area-pb sm:rounded-b-[16px] sm:border-b sm:mb-[max(env(safe-area-inset-bottom),16px)]"
+        className="relative z-[1] mx-auto flex w-full max-w-[min(100%,var(--syt-content-max))] max-h-[85vh] flex-col rounded-t-[16px] border border-[var(--syt-border)] border-b-0 bg-[var(--syt-surface)] shadow-[var(--syt-shadow-soft)] safe-area-pb sm:mb-[max(env(safe-area-inset-bottom),16px)] sm:rounded-b-[16px] sm:border-b"
       >
         <div className="flex shrink-0 flex-col items-center pt-2 pb-1" aria-hidden>
           <div className="h-1 w-10 rounded-full bg-[var(--syt-border)]" />

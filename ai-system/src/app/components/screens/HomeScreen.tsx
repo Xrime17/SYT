@@ -16,10 +16,10 @@ import { NewTaskForm, type NewTaskData } from './NewTaskForm';
 
 // Mock data
 const categories = [
-  { id: 'water',    label: 'Water',   icon: <Droplet   className="w-5 h-5" /> },
-  { id: 'reading',  label: 'Reading', icon: <Book      className="w-5 h-5" /> },
-  { id: 'food',     label: 'Food',    icon: <Utensils  className="w-5 h-5" /> },
-  { id: 'exercise', label: 'Fitness', icon: <Dumbbell  className="w-5 h-5" /> },
+  { id: 'water',    label: 'Water',   icon: <Droplet   className="w-4 h-4" /> },
+  { id: 'reading',  label: 'Reading', icon: <Book      className="w-4 h-4" /> },
+  { id: 'food',     label: 'Food',    icon: <Utensils  className="w-4 h-4" /> },
+  { id: 'exercise', label: 'Fitness', icon: <Dumbbell  className="w-4 h-4" /> },
 ];
 
 const todayTasks = [
@@ -103,23 +103,16 @@ const thisWeekTasks = [
 export interface HomeScreenProps {
   /** Currently active product tab (default: 'home') */
   activeTab?: ProductTabId | string;
-  /** Called when user taps a product nav tab — parent handles routing */
-  onNavigate?: (tab: string) => void;
-  onAddTask?: () => void;
-  onTaskClick?: (taskId: string) => void;
-  /**
-   * Число для подзаголовка «N habits». В продукте: `GET /categories/home-metrics` → `totalHabits`
-   * (число чипов HomeCategory; не отдельная сущность Habit с completion).
-   */
-  totalHabits?: number;
+  /** Show ProductBottomNav (default: true) */
+  showProductNav?: boolean;
+  /** Render only content without wrapper (for demo mode) */
+  contentOnly?: boolean;
 }
 
 export function HomeScreen({
   activeTab = 'home',
-  onNavigate,
-  onAddTask,
-  onTaskClick,
-  totalHabits: totalHabitsProp,
+  showProductNav = true,
+  contentOnly = false,
 }: HomeScreenProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('water');
   const [showNewTaskForm, setShowNewTaskForm] = useState(false);
@@ -154,35 +147,147 @@ export function HomeScreen({
     console.log('New task:', data);
   };
 
-  const handleNavClick = (id: string) => {
-    if (onNavigate) {
-      onNavigate(id);
-    }
-  };
-
-  const totalHabits = totalHabitsProp ?? 2;
   const allTasks = [...todayTasks, ...tomorrowTasks, ...thisWeekTasks];
   const hasNoTasks = allTasks.length === 0;
 
+  // Content only mode - just render the main content sections
+  if (contentOnly) {
+    return (
+      <>
+        {/* Header section */}
+        <section>
+          <h2 className="mb-4">Home Screen Demo</h2>
+          <p className="text-sm text-syt-text-secondary mb-4">
+            Multi-day task hub with accordion sections, category chips, and FAB
+          </p>
+        </section>
+
+        {/* Category chip strip demo */}
+        <div className="bg-syt-card border border-syt-border rounded-xl p-4 mb-4">
+          <p className="text-sm text-syt-text-muted mb-3">Category Chips</p>
+          <CategoryChipStrip
+            items={categories}
+            selectedId={selectedCategory}
+            onSelect={setSelectedCategory}
+            onAdd={() => console.log('Add category')}
+          />
+        </div>
+
+        {/* Task sections */}
+        <section>
+          <p className="text-sm text-syt-text-muted mb-3">Task Sections (Accordion)</p>
+          {hasNoTasks ? (
+            <EmptyState
+              icon={<CalendarDays className="w-12 h-12" />}
+              title="No tasks yet"
+              description="Start planning your day by adding your first task"
+              primaryAction={{
+                label: 'Add Task',
+                onClick: () => setShowNewTaskForm(true),
+                icon: <Plus className="w-4 h-4" />,
+              }}
+            />
+          ) : (
+            <SytAccordion type="multiple" defaultValue={['today']} className="space-y-2">
+              {/* Today — expanded by default */}
+              <SytAccordionItem value="today">
+                <SytAccordionTrigger count={todayTasks.length}>Today</SytAccordionTrigger>
+                <SytAccordionContent>
+                  <div className="space-y-3">
+                    {todayTasks.map((task) => (
+                      <TaskCard
+                        key={task.id}
+                        title={task.title}
+                        time={task.time}
+                        description={task.description}
+                        priority={task.priority}
+                        status={task.status}
+                        completed={taskStates[task.id]?.completed ?? task.completed}
+                        reminderEnabled={taskStates[task.id]?.reminderEnabled ?? task.reminderEnabled}
+                        onToggleComplete={() => toggleComplete(task.id)}
+                        onToggleReminder={() => toggleReminder(task.id)}
+                        onEdit={() => console.log('Edit', task.id)}
+                        onDelete={() => console.log('Delete', task.id)}
+                      />
+                    ))}
+                  </div>
+                </SytAccordionContent>
+              </SytAccordionItem>
+
+              {/* Tomorrow — collapsed by default */}
+              <SytAccordionItem value="tomorrow">
+                <SytAccordionTrigger count={tomorrowTasks.length}>Tomorrow</SytAccordionTrigger>
+                <SytAccordionContent>
+                  <div className="space-y-3">
+                    {tomorrowTasks.map((task) => (
+                      <TaskCard
+                        key={task.id}
+                        title={task.title}
+                        priority={task.priority}
+                        status={task.status}
+                        completed={taskStates[task.id]?.completed ?? task.completed}
+                        reminderEnabled={taskStates[task.id]?.reminderEnabled ?? task.reminderEnabled}
+                        onToggleComplete={() => toggleComplete(task.id)}
+                        onToggleReminder={() => toggleReminder(task.id)}
+                        onEdit={() => console.log('Edit', task.id)}
+                        onDelete={() => console.log('Delete', task.id)}
+                      />
+                    ))}
+                  </div>
+                </SytAccordionContent>
+              </SytAccordionItem>
+
+              {/* This week — collapsed by default */}
+              <SytAccordionItem value="this-week">
+                <SytAccordionTrigger count={thisWeekTasks.length}>This week</SytAccordionTrigger>
+                <SytAccordionContent>
+                  <div className="space-y-3">
+                    {thisWeekTasks.map((task) => (
+                      <TaskCard
+                        key={task.id}
+                        title={task.title}
+                        description={task.description}
+                        priority={task.priority}
+                        status={task.status}
+                        completed={taskStates[task.id]?.completed ?? task.completed}
+                        reminderEnabled={taskStates[task.id]?.reminderEnabled ?? task.reminderEnabled}
+                        onToggleComplete={() => toggleComplete(task.id)}
+                        onToggleReminder={() => toggleReminder(task.id)}
+                        onEdit={() => console.log('Edit', task.id)}
+                        onDelete={() => console.log('Delete', task.id)}
+                      />
+                    ))}
+                  </div>
+                </SytAccordionContent>
+              </SytAccordionItem>
+            </SytAccordion>
+          )}
+        </section>
+
+        {/* New Task Form bottom sheet */}
+        <NewTaskForm
+          open={showNewTaskForm}
+          onOpenChange={setShowNewTaskForm}
+          onSubmit={handleSubmitTask}
+        />
+      </>
+    );
+  }
+
+  // Full screen mode with navigation
   return (
     <div className="min-h-screen bg-syt-background pb-20">
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-syt-background/80 backdrop-blur-lg border-b border-syt-border">
-        <div className="max-w-screen-sm mx-auto px-4 py-6">
-          <div className="flex items-start justify-between mb-3">
-            <div className="flex-1">
-              <h1 className="mb-1">Home</h1>
-              <p className="text-sm text-syt-text-secondary">
-                Today · {allTasks.length} tasks · {totalHabits} habits
-              </p>
-            </div>
+      <header className="sticky top-0 z-10 bg-syt-background/95 backdrop-blur-lg border-b border-syt-border">
+        <div className="max-w-screen-sm mx-auto px-4 py-3">
+          <div className="flex items-center justify-between mb-3">
+            <h1 className="text-xl font-semibold">Tasks</h1>
             <button
               className={cn(
                 'p-2 rounded-lg',
-                'bg-syt-card border border-syt-border',
-                'text-syt-text-muted hover:text-syt-text hover:border-syt-accent/50',
+                'text-syt-text-muted hover:text-syt-text active:bg-syt-surface',
                 'transition-colors',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-syt-focus-ring'
+                'focus-visible:outline-none'
               )}
               aria-label="Settings"
             >
@@ -201,7 +306,7 @@ export function HomeScreen({
       </header>
 
       {/* Main Content */}
-      <main className="max-w-screen-sm mx-auto px-4 py-6">
+      <main className="max-w-screen-sm mx-auto px-4 py-4">
         {hasNoTasks ? (
           <EmptyState
             icon={<CalendarDays className="w-12 h-12" />}
@@ -214,7 +319,7 @@ export function HomeScreen({
             }}
           />
         ) : (
-          <SytAccordion type="multiple" defaultValue={['today']} className="space-y-1">
+          <SytAccordion type="multiple" defaultValue={['today']} className="space-y-2">
             {/* Today — expanded by default */}
             <SytAccordionItem value="today">
               <SytAccordionTrigger count={todayTasks.length}>Today</SytAccordionTrigger>
@@ -298,8 +403,8 @@ export function HomeScreen({
         aria-label="Add task"
       />
 
-      {/* ✅ ProductBottomNav — single source of truth, 5 tabs */}
-      <ProductBottomNav activeId={activeTab} onItemClick={handleNavClick} />
+      {/* ✅ ProductBottomNav — single source of truth, 5 tabs, decorative only */}
+      {showProductNav && <ProductBottomNav activeId={activeTab} />}
 
       {/* New Task Form bottom sheet */}
       <NewTaskForm

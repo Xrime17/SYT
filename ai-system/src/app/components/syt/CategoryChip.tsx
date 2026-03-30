@@ -15,7 +15,7 @@ export const CategoryChip = forwardRef<HTMLButtonElement, CategoryChipProps>(
       <button
         ref={ref}
         className={cn(
-          'flex items-center justify-center',
+          'flex items-center justify-center shrink-0',
           'w-12 h-12 rounded-full',
           'font-medium text-sm',
           'transition-all duration-200',

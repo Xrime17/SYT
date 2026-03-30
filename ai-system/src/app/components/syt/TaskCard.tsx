@@ -37,34 +37,55 @@ export function TaskCard({
   return (
     <div
       className={cn(
-        'group relative bg-syt-card border border-syt-border rounded-xl p-4',
-        'hover:border-syt-accent/30 transition-all duration-200',
+        'group relative bg-syt-card border border-syt-border rounded-xl p-4 touch-manipulation',
+        'hover:border-syt-accent/30 active:bg-syt-surface/50 transition-all duration-200',
         completed && 'opacity-60',
         className
       )}
     >
-      {/* Title row with time */}
+      {/* Title row with bell + time */}
       <div className="flex items-start justify-between gap-3 mb-2">
         <h3 className={cn(
-          'font-medium text-syt-text flex-1',
+          'font-medium text-syt-text flex-1 leading-snug',
           completed && 'line-through text-syt-text-muted'
         )}>
           {title}
         </h3>
-        {time && (
-          <span className="text-sm text-syt-text-secondary font-normal shrink-0">
-            {time}
-          </span>
-        )}
+        {/* Bell and time on the same line */}
+        <div className="flex items-center gap-2 shrink-0">
+          {onToggleReminder && (
+            <button
+              onClick={onToggleReminder}
+              className={cn(
+                'p-1.5 rounded-lg transition-colors touch-manipulation',
+                reminderEnabled
+                  ? 'text-syt-warning hover:bg-syt-warning-subtle active:scale-95'
+                  : 'text-syt-text-muted hover:text-syt-text hover:bg-syt-surface active:scale-95'
+              )}
+              aria-label={reminderEnabled ? 'Disable reminder' : 'Enable reminder'}
+            >
+              {reminderEnabled ? (
+                <Bell className="w-5 h-5" fill="currentColor" />
+              ) : (
+                <BellOff className="w-5 h-5" />
+              )}
+            </button>
+          )}
+          {time && (
+            <span className="text-sm text-syt-text-secondary font-normal">
+              {time}
+            </span>
+          )}
+        </div>
       </div>
 
       {description && (
-        <p className="text-sm text-syt-text-secondary mb-3 line-clamp-2">
+        <p className="text-sm text-syt-text-secondary mb-3 line-clamp-2 leading-relaxed">
           {description}
         </p>
       )}
 
-      {/* Bottom row: badges, reminder, checkbox */}
+      {/* Bottom row: badges + checkbox */}
       <div className="flex items-center justify-between gap-3">
         {/* Left: badges */}
         <div className="flex items-center gap-2 flex-wrap flex-1">
@@ -78,36 +99,19 @@ export function TaskCard({
           )}
         </div>
 
-        {/* Right: reminder bell + checkbox */}
-        <div className="flex items-center gap-2 shrink-0">
-          {onToggleReminder && (
-            <button
-              onClick={onToggleReminder}
-              className={cn(
-                'p-1.5 rounded-lg transition-colors',
-                reminderEnabled
-                  ? 'text-syt-warning hover:bg-syt-warning-subtle'
-                  : 'text-syt-text-muted hover:text-syt-text hover:bg-syt-surface'
-              )}
-              aria-label={reminderEnabled ? 'Disable reminder' : 'Enable reminder'}
-            >
-              {reminderEnabled ? (
-                <Bell className="w-4 h-4" fill="currentColor" />
-              ) : (
-                <BellOff className="w-4 h-4" />
-              )}
-            </button>
-          )}
+        {/* Right: checkbox only */}
+        <div className="flex items-center shrink-0">
           <Checkbox
             checked={completed}
             onChange={onToggleComplete}
+            className="w-6 h-6"
           />
         </div>
       </div>
 
-      {/* Hover actions (edit/delete) */}
+      {/* Hover actions (edit/delete) - hidden on mobile, shown on hover on desktop */}
       {(onEdit || onDelete) && (
-        <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">
           {onEdit && (
             <button
               onClick={onEdit}

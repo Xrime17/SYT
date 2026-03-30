@@ -72,11 +72,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
     month: 'short',
   });
 
+  /** Единая сетка: max ширина + отступы с учётом вырезов (env safe-area) */
+  const frame =
+    'mx-auto w-full min-w-0 max-w-[min(100%,var(--syt-content-max))] pl-[max(1rem,env(safe-area-inset-left,0px))] pr-[max(1rem,env(safe-area-inset-right,0px))]';
+
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--syt-background)]">
+    <div className="flex min-h-screen min-h-[100dvh] flex-col bg-[var(--syt-background)] pt-[env(safe-area-inset-top,0px)]">
       {/* Header */}
-      <header className="sticky top-0 z-20 bg-[var(--syt-surface)] border-b border-[var(--syt-border)]">
-        <div className="mx-auto flex h-14 max-w-2xl items-center justify-between gap-3 px-4">
+      <header className="sticky top-0 z-20 border-b border-[var(--syt-border)] bg-[var(--syt-surface)]">
+        <div className={`flex h-14 items-center justify-between gap-3 ${frame}`}>
           <div className="flex items-center gap-3 min-w-0">
             <Link
               href="/home"
@@ -149,16 +153,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      {/* Main — centered, max 640px, 16px side padding, scrollable, no shadows */}
-      <main className="flex-1 overflow-y-auto mx-auto w-full max-w-[640px] px-4 py-6 pb-24 sm:pb-8">
-        <div className="animate-in">
-          {children}
+      {/* Main — та же ширина колонки, что и шапка / таббар */}
+      <main className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+        <div className={`flex-1 py-6 pb-24 sm:pb-8 ${frame}`}>
+          <div className="animate-in">{children}</div>
         </div>
       </main>
 
-      {/* Bottom nav (mobile) — 52px height, #161b22 + border #2a2f37; labels 11px; active #6366f1, inactive #9ca3af */}
-      <nav className="fixed bottom-0 left-0 right-0 z-20 sm:hidden h-[52px] bg-[var(--syt-surface)] border-t border-[var(--syt-border)] safe-area-pb">
-        <div className="flex justify-around items-center h-full max-w-[640px] mx-auto">
+      {/* Bottom nav (mobile) — 52px height; safe-area снизу отдельным padding у контейнера */}
+      <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-[var(--syt-border)] bg-[var(--syt-surface)] pb-[env(safe-area-inset-bottom,0px)] sm:hidden">
+        <div className={`flex h-[52px] items-center justify-around ${frame}`}>
           <Link
             href="/home"
             className={`flex flex-col items-center justify-center flex-1 py-2 text-[11px] gap-0.5 min-w-0 ${
