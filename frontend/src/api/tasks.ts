@@ -9,6 +9,8 @@ export interface Task {
   status: string;
   priority: string;
   dueDate?: string | null;
+  /** Время завершения (если задача в статусе COMPLETED). */
+  completedAt?: string | null;
   /** FK на HomeCategory; null — без категории. */
   categoryId?: string | null;
   createdAt: string;

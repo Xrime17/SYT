@@ -54,7 +54,8 @@ export type HomeListKey = 'today' | 'tomorrow' | 'thisWeek' | 'completedThisWeek
  *
  * **This week** — active only, due after tomorrow through Sunday of current week (excludes today & tomorrow).
  *
- * **Completed this week** — `status === COMPLETED`, completion date (`updatedAt` local) within Monday–Sunday week.
+ * **Completed this week** — `status === COMPLETED`, completion date (`completedAt` local; fallback `updatedAt`)
+ * within Monday–Sunday week.
  * Completed tasks with due date **today** appear only under Today (not duplicated here).
  *
  * Tasks with due beyond this week are omitted from Home (full list on `/tasks`).
@@ -76,12 +77,13 @@ export function groupHomeLists(tasks: Task[], now: Date = new Date()): Record<Ho
     const due = dueLocalStr(task);
 
     if (task.status === 'COMPLETED') {
-      const updStr = toDateStrLocal(new Date(task.updatedAt));
+      const completedIso = task.completedAt ?? task.updatedAt;
+      const updStr = toDateStrLocal(new Date(completedIso));
       // Manual flow:
       // - If a task was completed, but its dueDate is still Today/Tomorrow, keep it in that bucket
       //   (with strikethrough in UI).
       // - After the due day ends, it moves into "Completed this week"
-      //   based on completion time (updatedAt in absence of completedAt in API).
+      //   based on completion time.
       if (due === todayStr) {
         buckets.today.push(task);
         continue;

@@ -6,6 +6,8 @@ import {
 import { Prisma, Priority, Task, TaskType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
+export type TaskWithCompletedAt = Task & { completedAt?: Date | null };
+
 export type UpdateTaskData = {
   title?: string;
   description?: string;
@@ -154,7 +156,7 @@ export class TasksService {
     timezone?: string,
     timezoneOffsetMinutes?: number,
     categoryId?: string,
-  ): Promise<Task[]> {
+  ): Promise<TaskWithCompletedAt[]> {
     const where: Prisma.TaskWhereInput = { userId };
 
     const cat = categoryId?.trim();
@@ -173,20 +175,36 @@ export class TasksService {
       }
     }
 
-    return this.prisma.task.findMany({
+    const rows = await this.prisma.task.findMany({
       where,
       orderBy: { createdAt: 'desc' },
+      include: {
+        completions: { take: 1, orderBy: { completedAt: 'desc' } },
+      },
     });
+    return rows.map(({ completions, ...task }) => ({
+      ...task,
+      completedAt:
+        task.status === 'COMPLETED' ? (completions[0]?.completedAt ?? null) : null,
+    }));
   }
 
-  async getTaskById(taskId: string): Promise<Task> {
-    const task = await this.prisma.task.findUnique({
+  async getTaskById(taskId: string): Promise<TaskWithCompletedAt> {
+    const row = await this.prisma.task.findUnique({
       where: { id: taskId },
+      include: {
+        completions: { take: 1, orderBy: { completedAt: 'desc' } },
+      },
     });
-    if (!task) {
+    if (!row) {
       throw new NotFoundException(`Task with id ${taskId} not found`);
     }
-    return task;
+    const { completions, ...task } = row;
+    return {
+      ...task,
+      completedAt:
+        task.status === 'COMPLETED' ? (completions[0]?.completedAt ?? null) : null,
+    };
   }
 
   async updateTask(
@@ -207,23 +225,33 @@ export class TasksService {
         );
       }
       const clampedDue = data.dueDate !== undefined ? this.clampDueDate(data.dueDate) : undefined;
-      return await this.prisma.task.update({
-        where: { id: taskId },
-        data: {
-          ...(data.title !== undefined && { title: data.title }),
-          ...(data.description !== undefined && {
-            description: data.description,
-          }),
-          ...(data.status !== undefined && { status: data.status }),
-          ...(data.priority !== undefined && { priority: data.priority }),
-          ...(clampedDue !== undefined && {
-            dueDate: clampedDue === null ? null : clampedDue,
-          }),
-          ...(data.categoryId !== undefined && {
-            categoryId: data.categoryId,
-          }),
-        },
-      });
+      const nextStatus = data.status ?? existing.status;
+      const shouldCreateCompletion =
+        data.status !== undefined &&
+        existing.status !== 'COMPLETED' &&
+        nextStatus === 'COMPLETED';
+
+      const updateData: Prisma.TaskUpdateInput = {
+        ...(data.title !== undefined && { title: data.title }),
+        ...(data.description !== undefined && { description: data.description }),
+        ...(data.status !== undefined && { status: data.status }),
+        ...(data.priority !== undefined && { priority: data.priority }),
+        ...(clampedDue !== undefined && { dueDate: clampedDue === null ? null : clampedDue }),
+        ...(data.categoryId !== undefined && { categoryId: data.categoryId }),
+      };
+
+      const [updated] = await this.prisma.$transaction([
+        this.prisma.task.update({ where: { id: taskId }, data: updateData }),
+        ...(shouldCreateCompletion
+          ? [
+              this.prisma.taskCompletion.create({
+                data: { taskId: existing.id, userId: existing.userId },
+              }),
+            ]
+          : []),
+      ]);
+
+      return updated;
     } catch (e) {
       if (
         e instanceof Prisma.PrismaClientKnownRequestError &&
