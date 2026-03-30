@@ -6,20 +6,15 @@ import { Checkbox } from '@/components/Checkbox';
 import { PriorityBadge, type Priority } from '@/components/PriorityBadge';
 
 const REVEAL_PX = 128;
+const SWIPE_THRESHOLD = 10;
 
-/**
- * Карточка задачи на Home: заголовок + чекбокс справа; бейджи снизу слева; колокольчик и время;
- * свайп влево — Delete / Cancel. Только `var(--syt-*)`.
- */
 export interface HomeTaskCardProps {
   title: string;
   titleHref?: string;
   description?: string | null;
   reminderActive: boolean;
-  /** Время рядом с колокольчиком (например из напоминания или due). */
   reminderTime?: string | null;
   reminderToggleDisabled?: boolean;
-  /** Активный: выключить напоминание; неактивный: открыть выбор даты/времени (родитель). */
   onReminderPress: () => void;
   priority: Priority;
   statusLabel: string;
@@ -49,26 +44,50 @@ export function HomeTaskCard({
   className = '',
 }: HomeTaskCardProps) {
   const [offset, setOffset] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const drag = useRef<{ start: number; startOff: number } | null>(null);
+  const [isSwiping, setIsSwiping] = useState(false);
+  const drag = useRef<{
+    startX: number;
+    startY: number;
+    startOff: number;
+    decided: boolean;
+    cancelled: boolean;
+  } | null>(null);
 
   const close = useCallback(() => setOffset(0), []);
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent) => {
       if (!onDelete) return;
-      const el = e.currentTarget as HTMLElement;
-      el.setPointerCapture?.(e.pointerId);
-      setIsDragging(true);
-      drag.current = { start: e.clientX, startOff: offset };
+      drag.current = {
+        startX: e.clientX,
+        startY: e.clientY,
+        startOff: offset,
+        decided: false,
+        cancelled: false,
+      };
     },
     [onDelete, offset]
   );
 
   const onPointerMove = useCallback(
     (e: React.PointerEvent) => {
-      if (!onDelete || !drag.current) return;
-      const dx = e.clientX - drag.current.start;
+      if (!onDelete || !drag.current || drag.current.cancelled) return;
+      const dx = e.clientX - drag.current.startX;
+      const dy = e.clientY - drag.current.startY;
+
+      if (!drag.current.decided) {
+        if (Math.abs(dy) > SWIPE_THRESHOLD) {
+          drag.current.cancelled = true;
+          return;
+        }
+        if (Math.abs(dx) > SWIPE_THRESHOLD) {
+          drag.current.decided = true;
+          setIsSwiping(true);
+        } else {
+          return;
+        }
+      }
+
       let next = drag.current.startOff + dx;
       if (next > 0) next = 0;
       if (next < -REVEAL_PX) next = -REVEAL_PX;
@@ -78,43 +97,54 @@ export function HomeTaskCard({
   );
 
   const onPointerUp = useCallback(() => {
-    if (!onDelete) {
-      return;
-    }
-    setIsDragging(false);
-    if (drag.current) {
-      drag.current = null;
+    if (!onDelete || !drag.current) return;
+    const wasSwiping = drag.current.decided && !drag.current.cancelled;
+    drag.current = null;
+    setIsSwiping(false);
+    if (wasSwiping) {
       setOffset((o) => (o < -REVEAL_PX / 2 ? -REVEAL_PX : 0));
     }
   }, [onDelete]);
 
-  const titleClass = `font-medium text-sm flex-1 min-w-0 text-[var(--syt-text)] ${
-    completed ? 'line-through text-[var(--syt-text-muted)] opacity-80' : ''
-  }`;
+  const stopSwipe = useCallback((e: React.PointerEvent | React.MouseEvent) => {
+    e.stopPropagation();
+  }, []);
 
   const titleNode = titleHref ? (
-    <Link href={titleHref} className={titleClass} onClick={(e) => offset !== 0 && e.preventDefault()}>
+    <Link
+      href={titleHref}
+      className={`font-medium text-sm flex-1 min-w-0 text-[var(--syt-text)] ${
+        completed ? 'line-through text-[var(--syt-text-muted)]' : ''
+      }`}
+      onClick={(e) => offset !== 0 && e.preventDefault()}
+    >
       {title}
     </Link>
   ) : (
-    <h3 className={titleClass}>{title}</h3>
+    <h3
+      className={`font-medium text-sm flex-1 min-w-0 text-[var(--syt-text)] ${
+        completed ? 'line-through text-[var(--syt-text-muted)]' : ''
+      }`}
+    >
+      {title}
+    </h3>
   );
 
   const cardInner = (
     <div
-      className={`rounded-[var(--syt-radius-card)] border border-[var(--syt-border)] bg-[var(--syt-card)] p-4 transition-[border-color] duration-200 hover:border-[var(--syt-accent)]/30 ${
-        completed ? 'opacity-60' : ''
-      }`}
+      className="rounded-[var(--syt-radius-card)] border border-[var(--syt-border)] bg-[var(--syt-card)] p-4 transition-[border-color] duration-200 hover:border-[var(--syt-accent)]/30"
     >
       <div className="mb-2 flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">{titleNode}</div>
         {onToggleComplete ? (
-          <Checkbox
-            checked={completed}
-            onCheckedChange={() => onToggleComplete()}
-            className="gap-0 shrink-0"
-            aria-label={completed ? 'Mark incomplete' : 'Mark complete'}
-          />
+          <div onPointerDown={stopSwipe} onClick={stopSwipe}>
+            <Checkbox
+              checked={completed}
+              onCheckedChange={() => onToggleComplete()}
+              className="gap-0 shrink-0"
+              aria-label={completed ? 'Mark incomplete' : 'Mark complete'}
+            />
+          </div>
         ) : null}
       </div>
 
@@ -151,7 +181,11 @@ export function HomeTaskCard({
 
         <button
           type="button"
-          onClick={onReminderPress}
+          onPointerDown={stopSwipe}
+          onClick={(e) => {
+            e.stopPropagation();
+            onReminderPress();
+          }}
           disabled={reminderToggleDisabled}
           aria-busy={reminderToggleDisabled || undefined}
           className={`flex shrink-0 items-center gap-1.5 rounded-lg px-1.5 py-1 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--syt-accent)] disabled:pointer-events-none disabled:opacity-40 ${
@@ -202,6 +236,7 @@ export function HomeTaskCard({
     <div className={`relative overflow-hidden rounded-[var(--syt-radius-card)] ${className}`}>
       <div
         className="absolute inset-y-0 right-0 z-0 flex w-[128px] items-stretch"
+        style={{ visibility: offset === 0 ? 'hidden' : 'visible' }}
         aria-hidden={offset === 0}
       >
         <button
@@ -224,10 +259,10 @@ export function HomeTaskCard({
       </div>
       <div
         role="presentation"
-        className="relative z-[1] touch-pan-y"
+        className="relative z-[1] touch-pan-y select-none"
         style={{
-          transform: `translateX(${offset}px)`,
-          transition: isDragging ? 'none' : 'transform 0.2s ease-out',
+          transform: offset !== 0 ? `translateX(${offset}px)` : undefined,
+          transition: isSwiping ? 'none' : 'transform 0.2s ease-out',
         }}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}

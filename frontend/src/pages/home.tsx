@@ -8,6 +8,7 @@
  */
 
 import { useCallback, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import useSWR from 'swr';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
@@ -605,22 +606,24 @@ export default function HomePage() {
           </>
         )}
 
-        {showFab && (
-          <button
-            type="button"
-            onClick={openCreateSheet}
-            className="fixed z-[95] right-4 flex h-14 w-14 items-center justify-center rounded-full border-2 border-[var(--syt-accent)] bg-[var(--syt-accent)] text-white shadow-[var(--syt-shadow-soft)] hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--syt-accent)] focus:ring-offset-2 focus:ring-offset-[var(--syt-background)]"
-            style={{
-              /* Над нижним таббаром Layout: h-[52px] + safe-area-pb на nav */
-              bottom: 'calc(52px + env(safe-area-inset-bottom, 0px) + 16px)',
-            }}
-            aria-label="Add task"
-          >
-            <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-          </button>
-        )}
+        {showFab &&
+          typeof document !== 'undefined' &&
+          createPortal(
+            <button
+              type="button"
+              onClick={openCreateSheet}
+              className="fixed z-[95] right-4 flex h-14 w-14 items-center justify-center rounded-full border-2 border-[var(--syt-accent)] bg-[var(--syt-accent)] text-white shadow-[var(--syt-shadow-soft)] hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--syt-accent)] focus:ring-offset-2 focus:ring-offset-[var(--syt-background)]"
+              style={{
+                bottom: 'calc(52px + env(safe-area-inset-bottom, 0px) + 16px)',
+              }}
+              aria-label="Add task"
+            >
+              <svg className="h-7 w-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+            </button>,
+            document.body
+          )}
 
         {user && (
           <HomeReminderSheet
