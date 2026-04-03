@@ -5,3 +5,4 @@ export * from './recurring';
 export * from './reminders';
 export * from './home-categories';
 export * from './home-metrics';
+export * from './habits';

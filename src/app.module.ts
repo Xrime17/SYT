@@ -9,6 +9,7 @@ import { RemindersModule } from './reminders/reminders.module';
 import { HealthModule } from './health/health.module';
 import { TelegramModule } from './telegram/telegram.module';
 import { CategoriesModule } from './categories/categories.module';
+import { HabitsModule } from './habits/habits.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { CategoriesModule } from './categories/categories.module';
     HealthModule,
     TelegramModule,
     CategoriesModule,
+    HabitsModule,
   ],
 })
 export class AppModule {}

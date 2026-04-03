@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -22,13 +21,10 @@ export type CategoryChipJson = {
   createdAt: string;
 };
 
-/**
- * Подзаголовок Home («N habits»): считаем **HomeCategory** (чипы полосы), без отдельной сущности Habit/daily completion.
- * Если позже понадобится «активные привычки за сегодня», расширить этот ответ отдельными полями, не ломая `totalHabits`.
- */
+/** Подзаголовок Home: `totalHabits` = число активных записей `Habit` (не в архиве). */
 export type HomeSubtitleMetricsJson = {
   totalHabits: number;
-  metric: 'homeCategoriesCount';
+  metric: 'activeHabitsCount';
 };
 
 @Injectable()
@@ -188,10 +184,10 @@ export class CategoriesService {
   }
 
   async homeSubtitleMetrics(userId: string): Promise<HomeSubtitleMetricsJson> {
-    const totalHabits = await this.prisma.homeCategory.count({
-      where: { userId },
+    const totalHabits = await this.prisma.habit.count({
+      where: { userId, archivedAt: null },
     });
-    return { totalHabits, metric: 'homeCategoriesCount' };
+    return { totalHabits, metric: 'activeHabitsCount' };
   }
 
   static assertUuidV4(value: string, field: string): void {

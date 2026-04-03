@@ -1,9 +1,10 @@
 'use client';
 
 /**
- * Home — хедер Tasks (аватар + настройки на мобиле), привычки (заглушка), 4 аккордеона.
+ * Home — хедер Tasks (аватар + настройки на мобиле), привычки, 4 аккордеона.
  * На мобиле верхний chrome Layout скрыт; задачи — `GET /tasks/:userId` без фильтра категории.
  * Напоминания: `GET /reminders/user`, `POST /reminders/quick`, `POST /reminders`.
+ * Привычки: `GET /habits/user/:userId`, `POST /habits/.../increment`.
  */
 
 import { useCallback, useMemo, useState } from 'react';
@@ -19,6 +20,9 @@ import { Card } from '@/components/Card';
 import { HomeEmptyState } from '@/components/HomeEmptyState';
 import { HomeTaskCard } from '@/components/HomeTaskCard';
 import { HomeReminderSheet } from '@/components/HomeReminderSheet';
+import { CreateHabitForm } from '@/components/CreateHabitForm';
+import { HabitDetailSheet } from '@/components/HabitDetailSheet';
+import { HabitTapCircle } from '@/components/HabitTapCircle';
 import type { Priority } from '@/components/PriorityBadge';
 import {
   SytAccordion,
@@ -35,6 +39,7 @@ import {
   type Task,
 } from '@/api/tasks';
 import { getHomeSubtitleMetrics } from '@/api/home-metrics';
+import { getHabits, incrementHabit, type HabitListItem } from '@/api/habits';
 import {
   getRemindersForUser,
   toggleHomeQuickReminder,
@@ -88,6 +93,9 @@ export default function HomePage() {
   const [createSheetOpen, setCreateSheetOpen] = useState(false);
   const [createFormKey, setCreateFormKey] = useState(0);
   const [reminderSheetTask, setReminderSheetTask] = useState<Task | null>(null);
+  const [habitCreateOpen, setHabitCreateOpen] = useState(false);
+  const [createHabitKey, setCreateHabitKey] = useState(0);
+  const [habitDetailId, setHabitDetailId] = useState<string | null>(null);
 
   const tasksSwrKey = user?.id ? tasksListSwrKey(user.id, null) : null;
 
@@ -119,7 +127,23 @@ export default function HomePage() {
     { revalidateOnFocus: true, dedupingInterval: 5000 }
   );
 
+  const { data: habitsData, mutate: mutateHabits } = useSWR(
+    user?.id ? (['habits', user.id] as const) : null,
+    ([, uid]) => getHabits(uid),
+    {
+      revalidateOnFocus: true,
+      revalidateIfStale: true,
+      dedupingInterval: 5000,
+    }
+  );
+
+  const habits = useMemo(() => habitsData ?? [], [habitsData]);
   const categoriesList = categoriesData ?? [];
+
+  const detailHabit = useMemo(
+    () => (habitDetailId ? habits.find((h) => h.id === habitDetailId) ?? null : null),
+    [habitDetailId, habits]
+  );
 
   const {
     data: remindersData,
@@ -257,6 +281,26 @@ export default function HomePage() {
     [user, remindersHydrating, taskIdsWithUnsentReminder, mutateReminders, clearMutateError]
   );
 
+  const handleHabitTap = useCallback(
+    async (h: HabitListItem) => {
+      if (!user) return;
+      clearMutateError();
+      try {
+        await incrementHabit(h.id, user.id);
+        await mutateHabits();
+        await mutateHomeMetrics();
+      } catch (e) {
+        setMutateError(e instanceof Error ? e.message : 'Ошибка');
+      }
+    },
+    [user, mutateHabits, mutateHomeMetrics, clearMutateError]
+  );
+
+  const openHabitCreateSheet = useCallback(() => {
+    setCreateHabitKey((k) => k + 1);
+    setHabitCreateOpen(true);
+  }, []);
+
   const error =
     mutateError ||
     (fetchError
@@ -282,7 +326,7 @@ export default function HomePage() {
   const prioritySafe = (p: string): Priority =>
     p === 'LOW' || p === 'MEDIUM' || p === 'HIGH' ? p : 'MEDIUM';
 
-  /** «Habits» в подзаголовке: `GET /categories/home-metrics` → `totalHabits`. */
+  /** Активные привычки: `GET /categories/home-metrics` → `totalHabits` (metric `activeHabitsCount`). */
   const habitCount: number = homeMetrics?.totalHabits ?? 0;
 
   return (
@@ -353,45 +397,20 @@ export default function HomePage() {
                 className="mb-2 flex items-center gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 aria-label="Habits"
               >
-                <div
-                  className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 border-[var(--syt-accent)] bg-[var(--syt-accent)]/20 text-[var(--syt-accent)]"
-                  title="Habit"
-                  aria-hidden
-                >
-                  <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
-                    <path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z" />
-                  </svg>
-                </div>
-                <div
-                  className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-[var(--syt-border)] bg-[var(--syt-card)] text-[var(--syt-text-muted)]"
-                  aria-hidden
-                >
-                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                </div>
-                <div
-                  className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-[var(--syt-border)] bg-[var(--syt-card)] text-[var(--syt-text-muted)]"
-                  aria-hidden
-                >
-                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <div
-                  className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-[var(--syt-border)] bg-[var(--syt-card)] text-[var(--syt-text-muted)]"
-                  aria-hidden
-                >
-                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
-                  </svg>
-                </div>
+                {habits.map((h) => (
+                  <HabitTapCircle
+                    key={h.id}
+                    habit={h}
+                    onTap={() => void handleHabitTap(h)}
+                    onLongPress={() => setHabitDetailId(h.id)}
+                  />
+                ))}
                 <button
                   type="button"
-                  onClick={() => {}}
+                  onClick={openHabitCreateSheet}
                   className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-dashed border-[var(--syt-border)] bg-[var(--syt-surface)] text-[var(--syt-text-muted)] hover:border-[var(--syt-accent)] hover:text-[var(--syt-accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--syt-accent)]"
-                  aria-label="Add habit (coming soon)"
-                  title="Add habit (coming soon)"
+                  aria-label="Add habit"
+                  title="Add habit"
                 >
                   <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -566,6 +585,26 @@ export default function HomePage() {
               onSuccess={() => setCreateSheetOpen(false)}
             />
           </BottomSheet>
+        )}
+
+        {user && (
+          <BottomSheet open={habitCreateOpen} onClose={() => setHabitCreateOpen(false)} title="New habit">
+            <CreateHabitForm
+              key={createHabitKey}
+              userId={user.id}
+              onCancel={() => setHabitCreateOpen(false)}
+              onSuccess={() => setHabitCreateOpen(false)}
+            />
+          </BottomSheet>
+        )}
+
+        {user && (
+          <HabitDetailSheet
+            open={detailHabit !== null}
+            onClose={() => setHabitDetailId(null)}
+            userId={user.id}
+            habit={detailHabit}
+          />
         )}
 
       </div>

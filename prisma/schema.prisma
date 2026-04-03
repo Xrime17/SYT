@@ -51,10 +51,46 @@ model User {
   tasks          Task[]
   completions    TaskCompletion[]
   homeCategories HomeCategory[]
+  habits         Habit[]
+  habitDayLogs   HabitDayLog[]
 }
 
-/// Категория для полосы чипов на Home (аналог habit/category strip в HomeScreen).
-/// Счётчик «habits» в подзаголовке Home = число записей пользователя (`GET /categories/home-metrics` → totalHabits), без отдельной модели Habit.
+/// Привычка: полоса кружков на Home; дневной прогресс в `HabitDayLog` (локальная дата в TZ пользователя).
+model Habit {
+  id           String    @id @default(uuid())
+  userId       String
+  title        String
+  /// Пресет иконки на клиенте (water, reading, book, clock, list, flame).
+  iconKey      String
+  targetPerDay Int       @default(1)
+  sortOrder    Int       @default(0)
+  archivedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs HabitDayLog[]
+
+  @@index([userId])
+  @@index([userId, sortOrder])
+}
+
+/// Счётчик за календарный день в таймзоне пользователя (`localDate` = YYYY-MM-DD).
+model HabitDayLog {
+  id        String @id @default(uuid())
+  habitId   String
+  userId    String
+  localDate String
+  count     Int    @default(0)
+
+  habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([habitId, localDate])
+  @@index([userId, localDate])
+}
+
+/// Категория для задач (чипы / фильтр). Подзаголовок «habits» на Home считает модель `Habit`, не `HomeCategory`.
 model HomeCategory {
   /// Первичный ключ записи.
   id          String   @id @default(uuid())
