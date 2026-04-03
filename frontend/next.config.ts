@@ -12,19 +12,17 @@ const nextConfig: NextConfig = {
     optimizePackageImports: ["@/components", "@/api", "@/hooks", "@/context"],
   },
   async headers() {
-    const isDev = process.env.NODE_ENV !== 'production';
-    // Telegram WebView can aggressively cache HTML. In dev keep page shells no-store so updates are visible.
-    const noStoreHtml = "no-store, no-cache, must-revalidate, max-age=0";
-    const htmlRootCache = 'public, s-maxage=86400, stale-while-revalidate=300';
-    const htmlPageCache = 'public, s-maxage=300, stale-while-revalidate=60';
-    const htmlCacheFor = isDev ? noStoreHtml : htmlPageCache;
+    // HTML documents: no long-lived cache so deploys are visible immediately (Telegram WebView included).
+    // Hashed JS/CSS under /_next/static/ stays immutable — fresh HTML points at new filenames.
+    const htmlCacheControl =
+      "no-store, no-cache, must-revalidate, max-age=0";
     return [
       {
         source: "/",
         headers: [
           {
             key: "Cache-Control",
-            value: isDev ? noStoreHtml : htmlRootCache,
+            value: htmlCacheControl,
           },
         ],
       },
@@ -33,7 +31,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: htmlCacheFor,
+            value: htmlCacheControl,
           },
         ],
       },
@@ -42,7 +40,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: htmlCacheFor,
+            value: htmlCacheControl,
           },
         ],
       },
@@ -51,7 +49,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: htmlCacheFor,
+            value: htmlCacheControl,
           },
         ],
       },
@@ -60,7 +58,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: htmlCacheFor,
+            value: htmlCacheControl,
           },
         ],
       },
@@ -69,7 +67,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: htmlCacheFor,
+            value: htmlCacheControl,
           },
         ],
       },
@@ -78,7 +76,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: htmlCacheFor,
+            value: htmlCacheControl,
           },
         ],
       },
@@ -87,7 +85,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: htmlCacheFor,
+            value: htmlCacheControl,
           },
         ],
       },
@@ -96,7 +94,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: htmlCacheFor,
+            value: htmlCacheControl,
           },
         ],
       },
@@ -105,7 +103,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: htmlCacheFor,
+            value: htmlCacheControl,
           },
         ],
       },
