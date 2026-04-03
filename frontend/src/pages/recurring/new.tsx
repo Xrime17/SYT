@@ -6,39 +6,31 @@ import { mutate } from 'swr';
 import Link from 'next/link';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/Button';
+import {
+  RecurringRuleFields,
+  buildCreateRecurringPayload,
+  defaultRecurringFieldValues,
+  recurringFieldsValid,
+  type RecurringFieldValues,
+} from '@/components/RecurringRuleFields';
 import { useUser } from '@/context/UserContext';
 import useSWR from 'swr';
 import { fetchTasksListForSwrKey, tasksListSwrKey, type Task } from '@/api/tasks';
 import { createRecurring } from '@/api/recurring';
 
-const FREQUENCIES = [
-  { value: 'DAILY', label: 'Daily' },
-  { value: 'WEEKLY', label: 'Weekly' },
-  { value: 'MONTHLY', label: 'Monthly' },
-  { value: 'CUSTOM', label: 'Custom interval' },
-] as const;
-
-const WEEKDAYS = [
-  { value: 1, label: 'Mon' },
-  { value: 2, label: 'Tue' },
-  { value: 3, label: 'Wed' },
-  { value: 4, label: 'Thu' },
-  { value: 5, label: 'Fri' },
-  { value: 6, label: 'Sat' },
-  { value: 7, label: 'Sun' },
-];
-
 export default function NewRecurringPage() {
   const router = useRouter();
   const { user } = useUser();
   const [taskId, setTaskId] = useState('');
-  const [frequency, setFrequency] = useState<(typeof FREQUENCIES)[number]['value']>('WEEKLY');
-  const [daysOfWeek, setDaysOfWeek] = useState<number[]>([1]); // Monday default
-  const [dayOfMonth, setDayOfMonth] = useState(1);
-  const [intervalDays, setIntervalDays] = useState(7);
-  const [endDate, setEndDate] = useState('');
+  const [recurringValues, setRecurringValues] = useState<RecurringFieldValues>(() =>
+    defaultRecurringFieldValues()
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const patchRecurring = useCallback((patch: Partial<RecurringFieldValues>) => {
+    setRecurringValues((prev) => ({ ...prev, ...patch }));
+  }, []);
 
   const { data: tasks = [] } = useSWR(
     user?.id ? tasksListSwrKey(user.id, null) : null,
@@ -46,42 +38,18 @@ export default function NewRecurringPage() {
     { revalidateOnFocus: true }
   );
 
-  const toggleDay = (d: number) => {
-    setDaysOfWeek((prev) =>
-      prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d].sort((a, b) => a - b)
-    );
-  };
-
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
       if (!user || !taskId.trim()) return;
+      if (!recurringFieldsValid(recurringValues)) {
+        setError('For weekly recurrence, pick at least one day.');
+        return;
+      }
       setError(null);
       setLoading(true);
       try {
-        const payload: {
-          taskId: string;
-          frequency: string;
-          interval?: number;
-          daysOfWeek?: number[];
-          endDate?: string;
-        } = {
-          taskId: taskId.trim(),
-          frequency,
-        };
-        if (frequency === 'WEEKLY' && daysOfWeek.length > 0) {
-          payload.daysOfWeek = daysOfWeek;
-        }
-        if (frequency === 'MONTHLY') {
-          payload.interval = Math.max(1, Math.min(31, dayOfMonth));
-        }
-        if (frequency === 'CUSTOM') {
-          payload.interval = Math.max(1, intervalDays);
-        }
-        if (endDate) {
-          payload.endDate = new Date(endDate).toISOString();
-        }
-        await createRecurring(payload);
+        await createRecurring(buildCreateRecurringPayload(taskId.trim(), recurringValues));
         await mutate(['recurring', user.id]);
         router.push('/recurring');
       } catch (e) {
@@ -90,7 +58,7 @@ export default function NewRecurringPage() {
         setLoading(false);
       }
     },
-    [user, taskId, frequency, daysOfWeek, dayOfMonth, intervalDays, endDate, router]
+    [user, taskId, recurringValues, router]
   );
 
   if (!user) {
@@ -129,7 +97,7 @@ export default function NewRecurringPage() {
               className="w-full rounded-[10px] border border-[var(--syt-border)] bg-[var(--syt-card)] px-3 py-2.5 text-sm text-[var(--syt-text)] focus:outline-none focus:ring-2 focus:ring-[var(--syt-accent)]"
             >
               <option value="">Choose task...</option>
-              {tasks.map((t) => (
+              {tasks.map((t: Task) => (
                 <option key={t.id} value={t.id}>
                   {t.title}
                 </option>
@@ -142,94 +110,7 @@ export default function NewRecurringPage() {
             )}
           </div>
 
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-[var(--syt-text)]">
-              Frequency *
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {FREQUENCIES.map((f) => (
-                <button
-                  key={f.value}
-                  type="button"
-                  onClick={() => setFrequency(f.value)}
-                  className={`rounded-lg px-4 py-2 text-xs font-medium transition-colors ${
-                    frequency === f.value
-                      ? 'bg-[var(--syt-accent)] text-white'
-                      : 'border border-[var(--syt-border)] bg-[var(--syt-card)] text-[var(--syt-text-secondary)]'
-                  }`}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {frequency === 'WEEKLY' && (
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-[var(--syt-text)]">
-                Days of week
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {WEEKDAYS.map((d) => (
-                  <button
-                    key={d.value}
-                    type="button"
-                    onClick={() => toggleDay(d.value)}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
-                      daysOfWeek.includes(d.value)
-                        ? 'bg-[var(--syt-accent)] text-white'
-                        : 'border border-[var(--syt-border)] bg-[var(--syt-card)] text-[var(--syt-text-secondary)]'
-                    }`}
-                  >
-                    {d.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {frequency === 'MONTHLY' && (
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-[var(--syt-text)]">
-                Day of month (1–31)
-              </label>
-              <input
-                type="number"
-                min={1}
-                max={31}
-                value={dayOfMonth}
-                onChange={(e) => setDayOfMonth(parseInt(e.target.value, 10) || 1)}
-                className="w-full rounded-[10px] border border-[var(--syt-border)] bg-[var(--syt-card)] px-3 py-2.5 text-sm text-[var(--syt-text)]"
-              />
-            </div>
-          )}
-
-          {frequency === 'CUSTOM' && (
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-[var(--syt-text)]">
-                Repeat every (days)
-              </label>
-              <input
-                type="number"
-                min={1}
-                value={intervalDays}
-                onChange={(e) => setIntervalDays(parseInt(e.target.value, 10) || 1)}
-                className="w-full rounded-[10px] border border-[var(--syt-border)] bg-[var(--syt-card)] px-3 py-2.5 text-sm text-[var(--syt-text)]"
-              />
-            </div>
-          )}
-
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-[var(--syt-text)]">
-              End date (optional)
-            </label>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="w-full rounded-[10px] border border-[var(--syt-border)] bg-[var(--syt-card)] px-3 py-2.5 text-sm text-[var(--syt-text)]"
-            />
-          </div>
+          <RecurringRuleFields value={recurringValues} onChange={patchRecurring} />
 
           {error && (
             <p className="text-sm text-[var(--syt-error)]">{error}</p>
@@ -239,7 +120,7 @@ export default function NewRecurringPage() {
             type="submit"
             variant="primary"
             className="w-full rounded-xl py-3"
-            disabled={loading || !taskId.trim() || (frequency === 'WEEKLY' && daysOfWeek.length === 0)}
+            disabled={loading || !taskId.trim() || !recurringFieldsValid(recurringValues)}
           >
             {loading ? 'Creating…' : 'Add recurring rule'}
           </Button>

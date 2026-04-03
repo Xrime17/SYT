@@ -3,7 +3,16 @@
 import { useCallback, useMemo, useState } from 'react';
 import { mutate } from 'swr';
 import { Button } from '@/components/Button';
+import { Checkbox } from '@/components/Checkbox';
+import {
+  RecurringRuleFields,
+  buildCreateRecurringPayload,
+  defaultRecurringFieldValues,
+  recurringFieldsValid,
+  type RecurringFieldValues,
+} from '@/components/RecurringRuleFields';
 import { createTask, type Task } from '@/api/tasks';
+import { createRecurring } from '@/api/recurring';
 import type { HomeCategory } from '@/api/home-categories';
 import { getDateBounds, clampDate } from '@/utils/date-bounds';
 
@@ -16,6 +25,8 @@ export type CreateTaskFormProps = {
   categories?: HomeCategory[];
   /** Предвыбранная категория (например активный фильтр на Home). */
   defaultCategoryId?: string | null;
+  /** Страница «Новая задача»: чекбокс «Цикл» и поля как на /recurring/new. */
+  allowRecurring?: boolean;
   onSuccess?: (task: Task) => void;
   onCancel?: () => void;
 };
@@ -24,6 +35,7 @@ export function CreateTaskForm({
   userId,
   categories,
   defaultCategoryId,
+  allowRecurring = false,
   onSuccess,
   onCancel,
 }: CreateTaskFormProps) {
@@ -37,6 +49,14 @@ export function CreateTaskForm({
   const [touched, setTouched] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cycleEnabled, setCycleEnabled] = useState(false);
+  const [recurringValues, setRecurringValues] = useState<RecurringFieldValues>(() =>
+    defaultRecurringFieldValues()
+  );
+
+  const patchRecurring = useCallback((patch: Partial<RecurringFieldValues>) => {
+    setRecurringValues((prev) => ({ ...prev, ...patch }));
+  }, []);
 
   const titleError = touched && !title.trim() ? 'Title is required' : null;
 
@@ -45,6 +65,10 @@ export function CreateTaskForm({
       e.preventDefault();
       setTouched(true);
       if (!title.trim()) return;
+      if (allowRecurring && cycleEnabled && !recurringFieldsValid(recurringValues)) {
+        setError('For weekly recurrence, pick at least one day.');
+        return;
+      }
       setError(null);
       setLoading(true);
       try {
@@ -62,6 +86,23 @@ export function CreateTaskForm({
           undefined,
           { revalidate: true }
         );
+        if (allowRecurring && cycleEnabled) {
+          try {
+            await createRecurring(buildCreateRecurringPayload(task.id, recurringValues));
+            await mutate(
+              (key) => Array.isArray(key) && key[0] === 'recurring' && key[1] === userId,
+              undefined,
+              { revalidate: true }
+            );
+          } catch (recErr) {
+            setError(
+              recErr instanceof Error
+                ? `Task created, but cycle was not saved: ${recErr.message}`
+                : 'Task created, but cycle was not saved.'
+            );
+            return;
+          }
+        }
         onSuccess?.(task);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Ошибка');
@@ -69,7 +110,19 @@ export function CreateTaskForm({
         setLoading(false);
       }
     },
-    [userId, title, description, taskType, priority, dueDate, categoryId, onSuccess]
+    [
+      userId,
+      title,
+      description,
+      taskType,
+      priority,
+      dueDate,
+      categoryId,
+      allowRecurring,
+      cycleEnabled,
+      recurringValues,
+      onSuccess,
+    ]
   );
 
   return (
@@ -173,6 +226,24 @@ export function CreateTaskForm({
         />
       </div>
 
+      {allowRecurring && (
+        <div className="flex flex-col gap-4">
+          <Checkbox
+            id="create-task-cycle"
+            label="Цикл"
+            checked={cycleEnabled}
+            onCheckedChange={(v) => {
+              setCycleEnabled(v);
+              if (!v) setRecurringValues(defaultRecurringFieldValues());
+            }}
+            className="text-sm font-medium text-[var(--syt-text)]"
+          />
+          {cycleEnabled && (
+            <RecurringRuleFields value={recurringValues} onChange={patchRecurring} />
+          )}
+        </div>
+      )}
+
       {error && <p className="text-sm text-[var(--syt-error)]">{error}</p>}
 
       <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
@@ -181,7 +252,15 @@ export function CreateTaskForm({
             Cancel
           </Button>
         )}
-        <Button type="submit" disabled={loading} variant="primary" className="w-full sm:flex-1 rounded-xl py-2.5">
+        <Button
+          type="submit"
+          disabled={
+            loading ||
+            (allowRecurring && cycleEnabled && !recurringFieldsValid(recurringValues))
+          }
+          variant="primary"
+          className="w-full sm:flex-1 rounded-xl py-2.5"
+        >
           {loading ? 'Creating…' : 'Add task'}
         </Button>
       </div>

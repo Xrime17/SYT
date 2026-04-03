@@ -44,6 +44,7 @@ export default function NewTaskPage() {
         <CreateTaskForm
           userId={user.id}
           categories={categoriesForForm}
+          allowRecurring
           onSuccess={() => router.push('/tasks')}
         />
       </div>
