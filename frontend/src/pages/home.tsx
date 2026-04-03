@@ -1,10 +1,9 @@
 'use client';
 
 /**
- * Home — хедер Tasks, полоса категорий, блок привычек (заглушка), 4 аккордеона:
- * Today / Tomorrow / This week / Completed this week.
- * `groupHomeLists` на клиенте по отфильтрованному списку `GET /tasks/:userId`.
- * Напоминания: `GET /reminders/user`, выключение `POST /reminders/quick`, новое время — `POST /reminders` (upsert).
+ * Home — хедер Tasks (аватар + настройки на мобиле), привычки (заглушка), 4 аккордеона.
+ * На мобиле верхний chrome Layout скрыт; задачи — `GET /tasks/:userId` без фильтра категории.
+ * Напоминания: `GET /reminders/user`, `POST /reminders/quick`, `POST /reminders`.
  */
 
 import { useCallback, useMemo, useState } from 'react';
@@ -14,8 +13,6 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { Layout } from '@/components/Layout';
 import { BottomSheet } from '@/components/BottomSheet';
-import { HomeCategoryEditSheet } from '@/components/HomeCategoryEditSheet';
-import { HomeCategoryFilterChip } from '@/components/HomeCategoryFilterChip';
 import { CreateTaskForm } from '@/components/CreateTaskForm';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -37,7 +34,6 @@ import {
   deleteTask,
   type Task,
 } from '@/api/tasks';
-import { getHomeCategories, type HomeCategory } from '@/api/home-categories';
 import { getHomeSubtitleMetrics } from '@/api/home-metrics';
 import {
   getRemindersForUser,
@@ -46,6 +42,7 @@ import {
   type Reminder,
 } from '@/api/reminders';
 import { groupHomeLists, type HomeListKey } from '@/utils/home-task-groups';
+import { getHomeCategories } from '@/api/home-categories';
 
 const OpenInTelegramCard = dynamic(
   () => import('@/components/OpenInTelegramCard').then((m) => m.OpenInTelegramCard),
@@ -90,14 +87,9 @@ export default function HomePage() {
   const [mutateError, setMutateError] = useState<string | null>(null);
   const [createSheetOpen, setCreateSheetOpen] = useState(false);
   const [createFormKey, setCreateFormKey] = useState(0);
-  const [categorySheet, setCategorySheet] = useState<
-    null | { mode: 'create' } | { mode: 'edit'; category: HomeCategory }
-  >(null);
-  /** `null` — фильтр «все задачи»; иначе UUID `HomeCategory`. */
-  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string | null>(null);
   const [reminderSheetTask, setReminderSheetTask] = useState<Task | null>(null);
 
-  const tasksSwrKey = user?.id ? tasksListSwrKey(user.id, selectedCategoryFilter) : null;
+  const tasksSwrKey = user?.id ? tasksListSwrKey(user.id, null) : null;
 
   const { data: tasks = [], error: fetchError, isLoading, mutate } = useSWR(
     tasksSwrKey,
@@ -110,12 +102,7 @@ export default function HomePage() {
     }
   );
 
-  const {
-    data: categoriesData,
-    error: categoriesError,
-    isLoading: categoriesIsLoading,
-    mutate: mutateCategories,
-  } = useSWR(
+  const { data: categoriesData } = useSWR(
     user?.id ? (['home-categories', user.id] as const) : null,
     ([, userId]) => getHomeCategories(userId),
     {
@@ -133,9 +120,6 @@ export default function HomePage() {
   );
 
   const categoriesList = categoriesData ?? [];
-  const showCategoriesLoadingEmpty = categoriesIsLoading && categoriesData === undefined;
-  const showCategoriesErrorEmpty =
-    Boolean(categoriesError) && !categoriesIsLoading && categoriesData === undefined;
 
   const {
     data: remindersData,
@@ -298,8 +282,8 @@ export default function HomePage() {
   const prioritySafe = (p: string): Priority =>
     p === 'LOW' || p === 'MEDIUM' || p === 'HIGH' ? p : 'MEDIUM';
 
-  /** «Habits» в подзаголовке: сервер `GET /categories/home-metrics` → `totalHabits` (= число HomeCategory). Пока метрика грузится — fallback на длину списка чипов. */
-  const habitCount: number = homeMetrics?.totalHabits ?? categoriesList.length;
+  /** «Habits» в подзаголовке: `GET /categories/home-metrics` → `totalHabits`. */
+  const habitCount: number = homeMetrics?.totalHabits ?? 0;
 
   return (
     <Layout>
@@ -328,9 +312,9 @@ export default function HomePage() {
 
         {user && (
           <>
-            {/* Внутренний хедер Home + полоса категорий (как HomeScreen) */}
-            <header className="sticky top-0 z-10 border-b border-[var(--syt-border)] bg-[var(--syt-background)]/80 py-6 backdrop-blur-lg">
-              <div className="flex items-start justify-between gap-3 mb-3">
+            {/* Внутренний хедер Home + привычки (без полосы категорий — компактнее) */}
+            <header className="sticky top-0 z-10 border-b border-[var(--syt-border)] bg-[var(--syt-background)]/80 py-3 backdrop-blur-lg sm:py-6">
+              <div className="flex items-start justify-between gap-3 mb-2">
                 <div className="min-w-0 flex-1">
                   <h1 className="text-xl font-semibold text-[var(--syt-text)] mb-1">Tasks</h1>
                   <p className="text-sm text-[var(--syt-text-secondary)]">
@@ -338,26 +322,35 @@ export default function HomePage() {
                     {habitCount === 1 ? 'habit' : 'habits'}
                   </p>
                 </div>
-                <Link
-                  href="/settings"
-                  className="shrink-0 p-2 rounded-lg bg-[var(--syt-card)] border border-[var(--syt-border)] text-[var(--syt-text-muted)] hover:text-[var(--syt-text)] hover:border-[var(--syt-accent)]/50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--syt-accent)]"
-                  aria-label="Settings"
-                  title="Settings"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                    />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                </Link>
+                <div className="flex shrink-0 items-center gap-2">
+                  <div
+                    className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--syt-accent)] text-sm font-semibold text-white sm:hidden"
+                    aria-hidden
+                    title={user.firstName ?? 'Profile'}
+                  >
+                    {user.firstName?.charAt(0) || '?'}
+                  </div>
+                  <Link
+                    href="/settings"
+                    className="shrink-0 p-2 rounded-lg bg-[var(--syt-card)] border border-[var(--syt-border)] text-[var(--syt-text-muted)] hover:text-[var(--syt-text)] hover:border-[var(--syt-accent)]/50 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--syt-accent)]"
+                    aria-label="Settings"
+                    title="Settings"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                      />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </Link>
+                </div>
               </div>
 
               <div
-                className="mb-4 flex items-center gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                className="mb-2 flex items-center gap-3 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 aria-label="Habits"
               >
                 <div
@@ -405,80 +398,9 @@ export default function HomePage() {
                   </svg>
                 </button>
               </div>
-
-              <div className="flex items-center gap-2 overflow-x-auto py-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                <button
-                  type="button"
-                  onClick={() => setSelectedCategoryFilter(null)}
-                  className={`flex h-12 shrink-0 items-center justify-center rounded-full px-4 text-sm font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--syt-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--syt-background)] ${
-                    selectedCategoryFilter === null
-                      ? 'bg-[var(--syt-accent)] text-white ring-2 ring-[var(--syt-accent)] ring-offset-2 ring-offset-[var(--syt-background)]'
-                      : 'bg-[var(--syt-card)] text-[var(--syt-text-secondary)] border border-[var(--syt-border)] hover:border-[var(--syt-accent)]/50 hover:text-[var(--syt-text)]'
-                  }`}
-                  aria-pressed={selectedCategoryFilter === null}
-                  aria-label="All categories"
-                >
-                  All
-                </button>
-                {showCategoriesLoadingEmpty && (
-                  <div
-                    className="flex min-h-12 min-w-[8rem] flex-1 items-center justify-center rounded-xl border border-[var(--syt-border)] bg-[var(--syt-surface)] px-4 py-2"
-                    role="status"
-                    aria-live="polite"
-                  >
-                    <p className="text-xs text-[var(--syt-text-muted)]">Loading categories…</p>
-                  </div>
-                )}
-                {showCategoriesErrorEmpty && (
-                  <div className="flex min-h-12 min-w-0 flex-1 flex-col items-stretch justify-center gap-2 rounded-xl border border-[var(--syt-border)] bg-[var(--syt-surface)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="text-xs text-[var(--syt-text-secondary)]">
-                      Couldn&apos;t load categories. Check connection and try again.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => void mutateCategories()}
-                      className="shrink-0 self-start rounded-lg border border-[var(--syt-border)] bg-[var(--syt-card)] px-3 py-1.5 text-xs font-medium text-[var(--syt-accent)] hover:border-[var(--syt-accent)]/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--syt-accent)] sm:self-center"
-                    >
-                      Retry
-                    </button>
-                  </div>
-                )}
-                {!showCategoriesLoadingEmpty &&
-                  !showCategoriesErrorEmpty &&
-                  categoriesList.map((c) => (
-                    <HomeCategoryFilterChip
-                      key={c.id}
-                      category={c}
-                      selected={selectedCategoryFilter === c.id}
-                      onSelect={() => setSelectedCategoryFilter(c.id)}
-                      onEdit={(cat) => setCategorySheet({ mode: 'edit', category: cat })}
-                    />
-                  ))}
-                {categoriesError && categoriesData !== undefined && (
-                  <button
-                    type="button"
-                    onClick={() => void mutateCategories()}
-                    className="shrink-0 rounded-lg border border-[var(--syt-error)]/40 bg-[var(--syt-card)] px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-[var(--syt-error)] hover:bg-[var(--syt-surface)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--syt-error)]"
-                    title={categoriesError instanceof Error ? categoriesError.message : 'Refresh categories'}
-                  >
-                    Refresh
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => setCategorySheet({ mode: 'create' })}
-                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-dashed border-[var(--syt-border)] bg-[var(--syt-surface)] text-[var(--syt-text-muted)] hover:border-[var(--syt-accent)] hover:text-[var(--syt-accent)] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--syt-accent)]"
-                  aria-label="Add category"
-                  title="Add category"
-                >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                </button>
-              </div>
             </header>
 
-            <div className="flex flex-col gap-6 pt-6">
+            <div className="flex flex-col gap-6 pt-3 sm:pt-6">
               {showLoading && (
                 <div className="rounded-[14px] border border-[var(--syt-border)] bg-[var(--syt-card)] p-8 flex items-center justify-center min-h-[120px]">
                   <p className="text-sm text-[var(--syt-text-secondary)]">Loading tasks…</p>
@@ -639,26 +561,13 @@ export default function HomePage() {
               key={createFormKey}
               userId={user.id}
               categories={categoriesData === undefined ? undefined : categoriesList}
-              defaultCategoryId={selectedCategoryFilter}
+              defaultCategoryId={null}
               onCancel={() => setCreateSheetOpen(false)}
               onSuccess={() => setCreateSheetOpen(false)}
             />
           </BottomSheet>
         )}
 
-        {user && categorySheet && (
-          <HomeCategoryEditSheet
-            open
-            onClose={() => setCategorySheet(null)}
-            userId={user.id}
-            mode={categorySheet.mode}
-            category={categorySheet.mode === 'edit' ? categorySheet.category : null}
-            onSaved={() => {
-              void mutateCategories();
-              void mutateHomeMetrics();
-            }}
-          />
-        )}
       </div>
     </Layout>
   );

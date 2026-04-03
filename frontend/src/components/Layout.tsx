@@ -76,10 +76,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const frame =
     'mx-auto w-full min-w-0 max-w-[min(100%,var(--syt-content-max))] pl-[max(1rem,env(safe-area-inset-left,0px))] pr-[max(1rem,env(safe-area-inset-right,0px))]';
 
+  /** На мобиле Home без верхней панели (Syt / закрыть / аватар) — компактнее, профиль в хедере страницы. */
+  const hideChromeOnMobileHome = pathname === '/home';
+
   return (
     <div className="flex min-h-screen min-h-[100dvh] flex-col bg-[var(--syt-background)] pt-[env(safe-area-inset-top,0px)]">
-      {/* Header */}
-      <header className="sticky top-0 z-20 border-b border-[var(--syt-border)] bg-[var(--syt-surface)]">
+      {/* Header — на Home скрыт на мобиле; на sm+ и на остальных экранах как раньше */}
+      <header
+        className={`sticky top-0 z-20 border-b border-[var(--syt-border)] bg-[var(--syt-surface)] ${
+          hideChromeOnMobileHome ? 'hidden sm:block' : ''
+        }`}
+      >
         <div className={`flex h-14 items-center justify-between gap-3 ${frame}`}>
           <div className="flex items-center gap-3 min-w-0">
             <Link
