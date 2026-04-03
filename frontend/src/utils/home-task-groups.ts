@@ -42,23 +42,34 @@ function dueLocalStr(task: Task): string | null {
   return toDateStrLocal(new Date(task.dueDate));
 }
 
+function completionTime(task: Task): number {
+  return new Date(task.completedAt ?? task.updatedAt).getTime();
+}
+
 /** Four Home accordions + tasks outside the week (not shown on Home). */
 export type HomeListKey = 'today' | 'tomorrow' | 'thisWeek' | 'completedThisWeek';
+
+function sortHomeBucketTasks(tasks: Task[], key: HomeListKey): Task[] {
+  if (key === 'completedThisWeek') {
+    return [...tasks].sort((a, b) => completionTime(b) - completionTime(a));
+  }
+  const active = tasks.filter((t) => t.status !== 'COMPLETED');
+  const done = tasks.filter((t) => t.status === 'COMPLETED');
+  const sortedDone = [...done].sort((a, b) => completionTime(a) - completionTime(b));
+  return [...active, ...sortedDone];
+}
 
 /**
  * Home lists (single source for /home):
  *
- * **Today** — active: undated inbox, overdue, due today; completed: only when due date is today (strikethrough in UI).
+ * **Today / Tomorrow / This week** — активные задачи + выполненные **в текущий локальный день**
+ * (`completedAt` / `updatedAt`), если по сроку они относятся к этой секции. Выполненные внизу списка.
+ * После смены календарного дня такие задачи попадают только в **Completed this week**.
  *
- * **Tomorrow** — active only, due tomorrow.
+ * **Completed this week** — завершённые в прошлые дни текущей недели (по дате завершения) и прочие
+ * завершённые за неделю, не показанные выше.
  *
- * **This week** — active only, due after tomorrow through Sunday of current week (excludes today & tomorrow).
- *
- * **Completed this week** — `status === COMPLETED`, completion date (`completedAt` local; fallback `updatedAt`)
- * within Monday–Sunday week.
- * Completed tasks with due date **today** appear only under Today (not duplicated here).
- *
- * Tasks with due beyond this week are omitted from Home (full list on `/tasks`).
+ * Задачи со сроком позже текущей недели на Home не показываются (полный список на `/tasks`).
  */
 export function groupHomeLists(tasks: Task[], now: Date = new Date()): Record<HomeListKey, Task[]> {
   const todayStr = toDateStrLocal(now);
@@ -78,13 +89,21 @@ export function groupHomeLists(tasks: Task[], now: Date = new Date()): Record<Ho
 
     if (task.status === 'COMPLETED') {
       const completedIso = task.completedAt ?? task.updatedAt;
-      const updStr = toDateStrLocal(new Date(completedIso));
-      // Manual flow:
-      // - If a task was completed, but its dueDate is still Today/Tomorrow, keep it in that bucket
-      //   (with strikethrough in UI).
-      // - After the due day ends, it moves into "Completed this week"
-      //   based on completion time.
-      if (due === todayStr) {
+      const completedDayStr = toDateStrLocal(new Date(completedIso));
+
+      if (completedDayStr < todayStr) {
+        if (completedDayStr >= weekStartStr && completedDayStr <= weekEndStr) {
+          buckets.completedThisWeek.push(task);
+        }
+        continue;
+      }
+
+      // completedDayStr === todayStr: остаёмся в today / tomorrow / this week (внизу после сортировки)
+      if (!due) {
+        buckets.today.push(task);
+        continue;
+      }
+      if (due < todayStr || due === todayStr) {
         buckets.today.push(task);
         continue;
       }
@@ -92,8 +111,11 @@ export function groupHomeLists(tasks: Task[], now: Date = new Date()): Record<Ho
         buckets.tomorrow.push(task);
         continue;
       }
-
-      if (updStr >= weekStartStr && updStr <= weekEndStr) {
+      if (due > tomorrowStr && due <= weekEndStr) {
+        buckets.thisWeek.push(task);
+        continue;
+      }
+      if (completedDayStr >= weekStartStr && completedDayStr <= weekEndStr) {
         buckets.completedThisWeek.push(task);
       }
       continue;
@@ -118,6 +140,10 @@ export function groupHomeLists(tasks: Task[], now: Date = new Date()): Record<Ho
       buckets.thisWeek.push(task);
     }
   }
+
+  (Object.keys(buckets) as HomeListKey[]).forEach((key) => {
+    buckets[key] = sortHomeBucketTasks(buckets[key], key);
+  });
 
   return buckets;
 }

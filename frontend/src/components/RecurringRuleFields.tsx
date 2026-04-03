@@ -1,5 +1,7 @@
 'use client';
 
+import type { RecurringRule } from '@/api/recurring';
+
 export const RECURRING_FREQUENCIES = [
   { value: 'DAILY' as const, label: 'Daily' },
   { value: 'WEEKLY' as const, label: 'Weekly' },
@@ -71,12 +73,71 @@ export function recurringFieldsValid(v: RecurringFieldValues): boolean {
   return true;
 }
 
+function toDateInput(iso: string): string {
+  return iso.slice(0, 10);
+}
+
+export function recurringRuleToFieldValues(rule: RecurringRule): RecurringFieldValues {
+  const v = defaultRecurringFieldValues();
+  const f = rule.frequency;
+  if (f === 'DAILY' || f === 'WEEKLY' || f === 'MONTHLY' || f === 'CUSTOM') {
+    v.frequency = f;
+  }
+  v.daysOfWeek =
+    rule.daysOfWeek && rule.daysOfWeek.length > 0
+      ? [...rule.daysOfWeek].sort((a, b) => a - b)
+      : [1];
+  if (rule.frequency === 'MONTHLY') {
+    v.dayOfMonth = Math.max(1, Math.min(31, rule.interval || 1));
+  }
+  if (rule.frequency === 'CUSTOM') {
+    v.intervalDays = Math.max(1, rule.interval || 7);
+  }
+  if (rule.endDate) {
+    v.endDate = toDateInput(rule.endDate);
+  }
+  return v;
+}
+
+/** Тело для `PATCH /recurring/:taskId`. */
+export function buildUpdateRecurringPayload(v: RecurringFieldValues): {
+  frequency: string;
+  interval?: number;
+  daysOfWeek?: number[];
+  endDate?: string | null;
+} {
+  const out: {
+    frequency: string;
+    interval?: number;
+    daysOfWeek?: number[];
+    endDate?: string | null;
+  } = { frequency: v.frequency };
+
+  if (v.frequency === 'WEEKLY') {
+    out.daysOfWeek = [...v.daysOfWeek];
+  } else {
+    out.daysOfWeek = [];
+  }
+  if (v.frequency === 'MONTHLY') {
+    out.interval = Math.max(1, Math.min(31, v.dayOfMonth));
+  } else if (v.frequency === 'CUSTOM') {
+    out.interval = Math.max(1, v.intervalDays);
+  } else if (v.frequency === 'DAILY') {
+    out.interval = 1;
+  }
+
+  out.endDate = v.endDate ? new Date(v.endDate).toISOString() : null;
+  return out;
+}
+
 type RecurringRuleFieldsProps = {
   value: RecurringFieldValues;
   onChange: (patch: Partial<RecurringFieldValues>) => void;
+  /** Без верхней границы (например первый блок на странице). */
+  hideTopBorder?: boolean;
 };
 
-export function RecurringRuleFields({ value, onChange }: RecurringRuleFieldsProps) {
+export function RecurringRuleFields({ value, onChange, hideTopBorder = false }: RecurringRuleFieldsProps) {
   const { frequency, daysOfWeek, dayOfMonth, intervalDays, endDate } = value;
 
   const toggleDay = (d: number) => {
@@ -88,7 +149,9 @@ export function RecurringRuleFields({ value, onChange }: RecurringRuleFieldsProp
   };
 
   return (
-    <div className="flex flex-col gap-6 border-t border-[var(--syt-border)] pt-6">
+    <div
+      className={`flex flex-col gap-6 ${hideTopBorder ? '' : 'border-t border-[var(--syt-border)] pt-6'}`}
+    >
       <div className="flex flex-col gap-2">
         <label className="text-sm font-medium text-[var(--syt-text)]">Frequency *</label>
         <div className="flex flex-wrap gap-2">

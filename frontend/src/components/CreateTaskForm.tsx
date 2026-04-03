@@ -25,7 +25,7 @@ export type CreateTaskFormProps = {
   categories?: HomeCategory[];
   /** Предвыбранная категория (например активный фильтр на Home). */
   defaultCategoryId?: string | null;
-  /** Страница «Новая задача»: чекбокс «Цикл» и поля как на /recurring/new. */
+  /** Чекбокс «Цикл» (по умолчанию вкл.: Home, /tasks/new). Передайте `false` чтобы скрыть (редко). */
   allowRecurring?: boolean;
   onSuccess?: (task: Task) => void;
   onCancel?: () => void;
@@ -35,7 +35,7 @@ export function CreateTaskForm({
   userId,
   categories,
   defaultCategoryId,
-  allowRecurring = false,
+  allowRecurring = true,
   onSuccess,
   onCancel,
 }: CreateTaskFormProps) {

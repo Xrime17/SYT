@@ -6,8 +6,24 @@ import { mutate } from 'swr';
 import Link from 'next/link';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/Button';
+import { Checkbox } from '@/components/Checkbox';
+import {
+  RecurringRuleFields,
+  buildCreateRecurringPayload,
+  buildUpdateRecurringPayload,
+  defaultRecurringFieldValues,
+  recurringFieldsValid,
+  recurringRuleToFieldValues,
+  type RecurringFieldValues,
+} from '@/components/RecurringRuleFields';
 import { useUser } from '@/context/UserContext';
 import { getTaskById, updateTask, type Task } from '@/api/tasks';
+import {
+  createRecurring,
+  deleteRecurring,
+  getRecurringByTask,
+  updateRecurring,
+} from '@/api/recurring';
 import { getDateBounds, clampDate } from '@/utils/date-bounds';
 
 const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH'] as const;
@@ -39,24 +55,51 @@ export default function EditTaskPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [cycleEnabled, setCycleEnabled] = useState(false);
+  const [hasExistingRecurring, setHasExistingRecurring] = useState(false);
+  const [recurringValues, setRecurringValues] = useState<RecurringFieldValues>(() =>
+    defaultRecurringFieldValues()
+  );
+
+  const patchRecurring = useCallback((patch: Partial<RecurringFieldValues>) => {
+    setRecurringValues((prev) => ({ ...prev, ...patch }));
+  }, []);
+
   useEffect(() => {
     if (!id || typeof id !== 'string') return;
+    let cancelled = false;
     setLoadingTask(true);
-    getTaskById(id)
-      .then((t) => {
+    setFetchError(null);
+    Promise.all([getTaskById(id), getRecurringByTask(id).catch(() => null)])
+      .then(([t, rule]) => {
+        if (cancelled) return;
         setTask(t);
         setTitle(t.title);
         setDescription(t.description ?? '');
         setPriority(
-          PRIORITIES.includes(t.priority as Priority) ? (t.priority as Priority) : 'MEDIUM',
+          PRIORITIES.includes(t.priority as Priority) ? (t.priority as Priority) : 'MEDIUM'
         );
-        setTaskType(
-          TASK_TYPES.includes(t.type as TaskType) ? (t.type as TaskType) : 'TASK',
-        );
+        setTaskType(TASK_TYPES.includes(t.type as TaskType) ? (t.type as TaskType) : 'TASK');
         setDueDate(toDateInput(t.dueDate));
+        if (rule) {
+          setHasExistingRecurring(true);
+          setCycleEnabled(true);
+          setRecurringValues(recurringRuleToFieldValues(rule));
+        } else {
+          setHasExistingRecurring(false);
+          setCycleEnabled(false);
+          setRecurringValues(defaultRecurringFieldValues());
+        }
       })
-      .catch((e) => setFetchError(e instanceof Error ? e.message : 'Failed to load task'))
-      .finally(() => setLoadingTask(false));
+      .catch((e) => {
+        if (!cancelled) setFetchError(e instanceof Error ? e.message : 'Failed to load task');
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingTask(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   const titleError = touched && !title.trim() ? 'Title is required' : null;
@@ -66,6 +109,10 @@ export default function EditTaskPage() {
       e.preventDefault();
       setTouched(true);
       if (!user || !task || !title.trim()) return;
+      if (cycleEnabled && !recurringFieldsValid(recurringValues)) {
+        setError('For weekly recurrence, pick at least one day.');
+        return;
+      }
       setError(null);
       setSaving(true);
       try {
@@ -81,6 +128,34 @@ export default function EditTaskPage() {
           undefined,
           { revalidate: true }
         );
+
+        if (cycleEnabled) {
+          try {
+            if (hasExistingRecurring) {
+              await updateRecurring(task.id, buildUpdateRecurringPayload(recurringValues));
+            } else {
+              await createRecurring(buildCreateRecurringPayload(task.id, recurringValues));
+              setHasExistingRecurring(true);
+            }
+          } catch (recErr) {
+            setError(recErr instanceof Error ? recErr.message : 'Could not save cycle');
+            setSaving(false);
+            return;
+          }
+        } else if (hasExistingRecurring) {
+          try {
+            await deleteRecurring(task.id);
+          } catch {
+            /* no rule */
+          }
+          setHasExistingRecurring(false);
+        }
+
+        await mutate(
+          (key) => Array.isArray(key) && key[0] === 'recurring' && key[1] === user.id,
+          undefined,
+          { revalidate: true }
+        );
         router.push('/tasks');
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Ошибка');
@@ -88,7 +163,19 @@ export default function EditTaskPage() {
         setSaving(false);
       }
     },
-    [user, task, title, description, priority, taskType, dueDate, router],
+    [
+      user,
+      task,
+      title,
+      description,
+      priority,
+      taskType,
+      dueDate,
+      router,
+      cycleEnabled,
+      recurringValues,
+      hasExistingRecurring,
+    ]
   );
 
   if (!user) {
@@ -115,7 +202,9 @@ export default function EditTaskPage() {
         <div className="flex flex-col gap-4 items-center justify-center min-h-[200px]">
           <p className="text-sm text-[var(--syt-error)]">{fetchError ?? 'Task not found'}</p>
           <Link href="/tasks">
-            <Button variant="secondary" className="rounded-xl">Back to tasks</Button>
+            <Button variant="secondary" className="rounded-xl">
+              Back to tasks
+            </Button>
           </Link>
         </div>
       </Layout>
@@ -140,9 +229,7 @@ export default function EditTaskPage() {
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-[var(--syt-text)]">
-              Title *
-            </label>
+            <label className="text-sm font-medium text-[var(--syt-text)]">Title *</label>
             <input
               type="text"
               value={title}
@@ -151,9 +238,7 @@ export default function EditTaskPage() {
               placeholder="Enter task title"
               className="w-full rounded-[10px] border border-[var(--syt-border)] bg-[var(--syt-card)] px-3 py-2.5 text-sm text-[var(--syt-text)] placeholder-[var(--syt-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--syt-accent)]"
             />
-            {titleError && (
-              <p className="text-xs text-[var(--syt-error)]">Title is required</p>
-            )}
+            {titleError && <p className="text-xs text-[var(--syt-error)]">Title is required</p>}
           </div>
 
           <div className="flex flex-col gap-2">
@@ -170,9 +255,7 @@ export default function EditTaskPage() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-[var(--syt-text)]">
-              Priority
-            </label>
+            <label className="text-sm font-medium text-[var(--syt-text)]">Priority</label>
             <div className="flex flex-wrap gap-2">
               {PRIORITIES.map((p) => (
                 <button
@@ -192,9 +275,7 @@ export default function EditTaskPage() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-[var(--syt-text)]">
-              Task type
-            </label>
+            <label className="text-sm font-medium text-[var(--syt-text)]">Task type</label>
             <div className="flex flex-wrap gap-2">
               {TASK_TYPES.map((t) => (
                 <button
@@ -214,9 +295,7 @@ export default function EditTaskPage() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium text-[var(--syt-text)]">
-              Due date (optional)
-            </label>
+            <label className="text-sm font-medium text-[var(--syt-text)]">Due date (optional)</label>
             <input
               type="date"
               value={dueDate}
@@ -228,13 +307,27 @@ export default function EditTaskPage() {
             />
           </div>
 
-          {error && (
-            <p className="text-sm text-[var(--syt-error)]">{error}</p>
-          )}
+          <div className="flex flex-col gap-4">
+            <Checkbox
+              id="edit-task-cycle"
+              label="Цикл"
+              checked={cycleEnabled}
+              onCheckedChange={(v) => {
+                setCycleEnabled(v);
+                if (!v) setRecurringValues(defaultRecurringFieldValues());
+              }}
+              className="text-sm font-medium text-[var(--syt-text)]"
+            />
+            {cycleEnabled && (
+              <RecurringRuleFields value={recurringValues} onChange={patchRecurring} hideTopBorder />
+            )}
+          </div>
+
+          {error && <p className="text-sm text-[var(--syt-error)]">{error}</p>}
 
           <Button
             type="submit"
-            disabled={saving}
+            disabled={saving || (cycleEnabled && !recurringFieldsValid(recurringValues))}
             variant="primary"
             className="w-full rounded-xl py-2.5"
           >
